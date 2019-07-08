@@ -7,3 +7,9 @@
 
 # .tfvars files
 *.tfvars
+
+# temp archive files
+.files/
+
+# other uncessarry files
+.DS_Store

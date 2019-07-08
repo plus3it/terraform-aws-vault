@@ -1,0 +1,13 @@
+# -*- coding: utf-8 -*-
+
+vault:
+  repo_base_url: "https://releases.hashicorp.com/vault"
+  dev_mode: False
+  verify_download: True
+  listener_address: "0.0.0.0:8200"
+  listener_tls_disable: 1
+  default_lease_ttl: 192h #one week
+  max_lease_ttl: 192h #one week
+  recovery_shares: 5
+  recovery_threshold: 3
+

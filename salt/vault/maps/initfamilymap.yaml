@@ -1,0 +1,10 @@
+# -*- coding: utf-8 -*-]
+systemd:
+  service:
+    path: /etc/systemd/system/vault.service
+    source: salt://vault/files/vault.service.jinja
+
+upstart:
+  service:
+    path: /etc/init/vault.conf
+    source: salt://vault/files/vault.conf.jinja

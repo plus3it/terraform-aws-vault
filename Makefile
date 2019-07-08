@@ -14,7 +14,7 @@ SHELL := bash
 
 .PHONY: guard/% %/install %/lint
 
-GITHUB_ACCESS_TOKEN ?= 
+GITHUB_ACCESS_TOKEN ?=
 # Macro to return the download url for a github release
 # For latest release, use version=latest
 # To pin a release, use version=tags/<tag>
