@@ -10,4 +10,3 @@ vault:
   max_lease_ttl: 192h #one week
   recovery_shares: 5
   recovery_threshold: 3
-

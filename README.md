@@ -49,4 +49,3 @@ Terraform module that installs and configures Hashicorp Vault cluster with HA Dy
 | Name | Description |
 |------|-------------|
 | vault\_url | URL to access Vault UI |
-

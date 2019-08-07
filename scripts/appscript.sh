@@ -3,9 +3,8 @@ set -eu -o pipefail
 
 [[ $# -lt 6 ]] && {
     echo "Usage $0 <SALT_ARCHIVE> <CONFIGS_ARCHIVE> <VAULT_VERSION> <DYNAMODB_TABLE> <KMS_KEY_ID> <SSM_PATH> <VAULT_ADMIN_URL>" >&2
-    echo "  Example: $0 bucket-foo/randomid/salt.zip bucket-foo/randomid/configs.zip 1.1.3
-    vault-data-table xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx vault/dev/token
-    https://github.com/PremiereGlobal/vault-admin/releases/download/0.3.1/vadmin-linux-0.3.1.zip" >&2
+    echo "  Example: $0 bucket-foo/randomid/salt.zip bucket-foo/randomid/configs.zip 1.2.0
+    vault-data-table xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx vault/dev/token /etc/vault/configs" >&2
     exit 1
 }
 
@@ -70,7 +69,8 @@ salt-call --local --retcode-passthrough state.sls vault.initialize -l info 2>&1 
 if [ "${CONFIGS_ARCHIVE}" != "n/a" ];
 then
   echo "[appscript]: Retrieving root token to assist configuration provisioning..."
-  export VAULT_TOKEN=$(aws ssm get-parameter --name /${SSM_PATH}/root_token --with-decryption --query 'Parameter.Value' | tr -d '"')
+  VAULT_TOKEN=$(aws ssm get-parameter --name /"${SSM_PATH}"/root_token --with-decryption --query 'Parameter.Value' | tr -d '"')
+  export VAULT_TOKEN
 
   echo "[appscript]: Ensuring default vault configs location exists, ${CONFIGURATION_PATH}..."
   mkdir -p ${CONFIGURATION_PATH}

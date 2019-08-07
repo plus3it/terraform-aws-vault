@@ -29,6 +29,7 @@ except:
     log.debug('Unable to import the dependencies...')
     DEPS_INSTALLED = False
 
+
 class InsufficientParameters(Exception):
     pass
 
@@ -101,7 +102,7 @@ class VaultAuthMethod:
     def __repr__(self):
         return ("Path: %s - Type: %s - Desc: %s - Options: %s - Hash : %s" %
                 (self.path, self.type, self.description, str(self.config),
-                 self.get_unique_id()))
+                self.get_unique_id()))
 
 
 class VaultSecretEngine:
@@ -159,7 +160,7 @@ class VaultSecretEngine:
     def __repr__(self):
         return ("Path: %s - Type: %s - Desc: %s - Options: %s - Hash : %s" %
                 (self.path, self.type, self.description, str(self.config),
-                 self.get_unique_id()))
+                self.get_unique_id()))
 
 
 class VaultAuditDevice:
@@ -176,7 +177,7 @@ class VaultAuditDevice:
 
     def get_device_unique_id(self):
         unique_str = str(self.type + self.path +
-                         self.description + str(self.options))
+                        self.description + str(self.options))
         sha256_hash = hashlib.sha256(unique_str.encode()).hexdigest()
         return sha256_hash
 
@@ -186,7 +187,7 @@ class VaultAuditDevice:
     def __repr__(self):
         return ("Path: %s - Type: %s - Desc: %s - Options: %s - Hash : %s" %
                 (self.path, self.type, self.description, str(self.options),
-                 self.get_device_unique_id()))
+                self.get_device_unique_id()))
 
 
 class VaultPolicyManager():
@@ -342,7 +343,7 @@ class VaultAuthManager():
 
     def get_local_auth_methods(self):
         log.info('Loading auth methods form local config file: %s',
-                 self.config_path)
+                self.config_path)
         config = __utils__['vault.load_config_file'](
             config_path=self.config_path)
         for auth_method in config["auth-methods"]:
@@ -700,7 +701,7 @@ class VaultSecretsManager():
                         path=secret_engine.path
                     )
                     log.info('Secrets engine "%s" at path "%s" is disabled.',
-                             secret_engine.type, secret_engine.type)
+                            secret_engine.type, secret_engine.type)
         log.info('Finished cleaning up secrets engines.')
 
         if has_changes:
@@ -815,7 +816,7 @@ class VaultAuditManager():
         for audit_device in self.remote_audit_devices:
             if audit_device not in self.local_audit_devices:
                 log.info('Disabling audit device "%s" at path "%s"...',
-                         audit_device.type, audit_device.path)
+                        audit_device.type, audit_device.path)
                 has_changes = True
                 self.client.sys.disable_audit_device(
                     path=audit_device.path

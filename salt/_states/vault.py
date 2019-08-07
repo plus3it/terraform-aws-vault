@@ -40,9 +40,9 @@ def initialized(name, ssm_path, recovery_shares=5, recovery_threshold=3):
     :rtype: dict
     """
     ret = {'name': name,
-           'comment': '',
-           'result': '',
-           'changes': {}}
+          'comment': '',
+          'result': '',
+          'changes': {}}
 
     client = hvac.Client(url='http://localhost:8200')
 
@@ -93,4 +93,3 @@ def initialized(name, ssm_path, recovery_shares=5, recovery_threshold=3):
         ret['comment'] = 'Vault has {}initialized'.format(
             '' if is_success else 'failed to be ')
     return ret
-

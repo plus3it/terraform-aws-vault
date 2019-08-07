@@ -18,13 +18,13 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 
 
 def build_client(url='http://localhost:8200',
-                 token=None,
-                 cert=None,
-                 verify=True,
-                 timeout=30,
-                 proxies=None,
-                 allow_redirects=True,
-                 session=None):
+                token=None,
+                cert=None,
+                verify=True,
+                timeout=30,
+                proxies=None,
+                allow_redirects=True,
+                session=None):
 
     client = hvac.Client(url=url)
 

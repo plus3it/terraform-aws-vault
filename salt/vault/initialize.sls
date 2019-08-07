@@ -6,4 +6,3 @@ vault_initialize_server:
     - recovery_shares: {{ vault.recovery_shares }}
     - recovery_threshold: {{ vault.recovery_threshold }}
     - ssm_path: {{ vault.ssm_path }}
-
