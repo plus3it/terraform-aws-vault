@@ -9,14 +9,15 @@ terraform {
 locals {
   name_id             = "${var.name}-${random_string.this.result}"
   vpc_id              = "${data.aws_subnet.lb.0.vpc_id}"
-  role_name           = "INSTANCE_VAULT_${data.aws_caller_identity.current.account_id}"
+  role_name           = "${upper(var.name)}_INSTANCE_${data.aws_caller_identity.current.account_id}"
   ssm_root_path       = "vault/${var.environment}/${data.aws_caller_identity.current.account_id}/${var.name}"
   public_ip           = "${chomp(data.http.ip.body)}/32"
   allow_inbound       = "${compact(distinct(concat(list(local.public_ip), var.additional_ips_allow_inbound)))}"
   archive_file_name   = "salt.zip"
+  configs_file_name   = "configs.zip"
   appscript_file_name = "appscript.sh"
-  archive_file_path   = "${path.module}/.files/${local.archive_file_name}"
-  appscript_file_path = "${path.module}/scripts/${local.appscript_file_name}"
+  archive_dir_path    = "${path.module}/.files"
+  appscript_dir_path  = "${path.module}/scripts"
 
   tags = {
     Environment = "${var.environment}"
@@ -62,8 +63,14 @@ data "aws_kms_key" "this" {
 
 data "archive_file" "salt" {
   type        = "zip"
-  source_dir  = "salt"
-  output_path = "${local.archive_file_path}"
+  source_dir  = "${path.module}/salt"
+  output_path = "${local.archive_dir_path}/${local.archive_file_name}"
+}
+data "archive_file" "configs" {
+  count       = "${var.configs_path == "" ? 0 : 1}"
+  type        = "zip"
+  source_dir  = "${var.configs_path}"
+  output_path = "${local.archive_dir_path}/${local.configs_file_name}"
 }
 
 # Manage Bucket module
@@ -96,15 +103,23 @@ resource "random_string" "this" {
 resource "aws_s3_bucket_object" "salt_zip" {
   bucket = "${module.s3_bucket.bucket_name}"
   key    = "${random_string.this.result}/${local.archive_file_name}"
-  source = "${local.archive_file_path}"
+  source = "${local.archive_dir_path}/${local.archive_file_name}"
   etag   = "${data.archive_file.salt.output_md5}"
+}
+
+resource "aws_s3_bucket_object" "configs_zip" {
+  count  = "${var.configs_path == "" ? 0 : 1}"
+  bucket = "${module.s3_bucket.bucket_name}"
+  key    = "${random_string.this.result}/${local.configs_file_name}"
+  source = "${local.archive_dir_path}/${local.configs_file_name}"
+  etag   = "${data.archive_file.configs.*.output_md5[count.index]}"
 }
 
 resource "aws_s3_bucket_object" "app_script" {
   bucket = "${module.s3_bucket.bucket_name}"
   key    = "${random_string.this.result}/${local.appscript_file_name}"
-  source = "${local.appscript_file_path}"
-  etag   = "${filemd5("${local.appscript_file_path}")}"
+  source = "${local.appscript_dir_path}/${local.appscript_file_name}"
+  etag   = "${filemd5("${local.appscript_dir_path}/${local.appscript_file_name}")}"
 }
 
 # Manage domain record
@@ -268,12 +283,15 @@ resource "aws_security_group_rule" "ssh" {
 
 # Prepare appscript parameters
 locals {
+  # combine key to configs s3 object, otherwise pass 'n/a' to appscript
+  s3_configs_key = "${var.configs_path == "" ? "n/a" : "${module.s3_bucket.bucket_name}/${random_string.this.result}/${local.configs_file_name}"}"
   params_for_appscript = [
     "${module.s3_bucket.bucket_name}/${random_string.this.result}/${local.archive_file_name}",
+    "${local.s3_configs_key}",
     "${var.vault_version}",
     "${var.dynamodb_table}",
     "${data.aws_kms_key.this.key_id}",
-    "${local.ssm_root_path}",
+    "${local.ssm_root_path}"
   ]
 
   appscript_url    = "s3://${module.s3_bucket.bucket_name}/${random_string.this.result}/${local.appscript_file_name}"
@@ -296,6 +314,7 @@ module "autoscaling_group" {
 
   CfnEndpointUrl     = "${var.cfn_endpoint_url}"
   CloudWatchAgentUrl = "${var.cloudwatch_agent_url}"
+  CloudWatchAppLogs  = ["/var/log/salt_vault.log", "/var/log/salt_vault_initialize.log", "/var/log/salt_vault_sync.log"]
   KeyPairName        = "${var.key_pair_name}"
   InstanceRole       = "${module.iam.profile_name}"
   InstanceType       = "${var.instance_type}"

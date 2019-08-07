@@ -19,7 +19,14 @@ vault_data_dir:
     - name: /etc/vault
     - user: vault
     - group: vault
-    - mode: '0700'
+    - mode: '0755'
+
+vault_logs_dir:
+  file.directory:
+    - name: /etc/vault/logs
+    - user: vault
+    - group: vault
+    - mode: '0755'
 
 vault_package_install_file_directory:
   file.directory:
@@ -76,7 +83,6 @@ install_pip_executable:
         curl -L "https://bootstrap.pypa.io/get-pip.py" > get_pip.py
         sudo python get_pip.py pip==18.0.0
         rm get_pip.py
-
     - reload_modules: True
 
 install_python_dependencies:
@@ -84,3 +90,4 @@ install_python_dependencies:
     - pkgs: {{ vault.module_dependencies.pip_deps | json }}
     - reload_modules: True
     - ignore_installed: True
+

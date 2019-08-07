@@ -1,9 +1,6 @@
 
 {% from "vault/map.jinja" import vault with context %}
 
-include:
-  - .service
-
 {# only configure if vault is not in dev_mode #}
 {%- if not vault.dev_mode %}
 

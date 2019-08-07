@@ -90,6 +90,11 @@ variable "ami_name_regex" {
   type        = "string"
   default     = "spel-minimal-centos-7-hvm-\\d{4}\\.\\d{2}\\.\\d{1}\\.x86_64-gp2"
 }
+variable "configs_path" {
+  description = "Path to directory that contains configuration files for vault"
+  type        = "string"
+  default     = ""
+}
 
 variable "instance_type" {
   default     = "t2.medium"

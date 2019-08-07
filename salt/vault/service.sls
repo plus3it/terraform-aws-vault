@@ -20,5 +20,3 @@ vault_service_running:
     - watch:
       - archive: vault_package_install_archive_extracted
       - file: vault_configure_service_file
-
-

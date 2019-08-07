@@ -14,6 +14,7 @@ Terraform module that installs and configures Hashicorp Vault cluster with HA Dy
 | cfn\_bootstrap\_utils\_url | (Optional) URL to aws-cfn-bootstrap-latest.tar.gz | string | `"https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz"` | no |
 | cfn\_endpoint\_url | (Optional) URL to the CloudFormation Endpoint. e.g. https://cloudformation.us-east-1.amazonaws.com | string | `"https://cloudformation.us-east-1.amazonaws.com"` | no |
 | cloudwatch\_agent\_url | (Optional) S3 URL to CloudWatch Agent installer. Example: s3://amazoncloudwatch-agent/linux/amd64/latest/AmazonCloudWatchAgent.zip | string | `""` | no |
+| configs\_path | Path to directory that contains configuration files for vault | string | `""` | no |
 | desired\_capacity | (Optional) Desired number of instances in the Autoscaling Group | string | `"2"` | no |
 | dynamodb\_table | Name of the Dynamodb to be used as storage backend for Vault | string | n/a | yes |
 | ec2\_extra\_security\_group\_ids | List of additional security groups to add to EC2 instances | list | n/a | yes |

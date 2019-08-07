@@ -3,11 +3,10 @@ from __future__ import absolute_import
 import logging
 import os
 import json
+import sys
 
-import salt.config
-import salt.syspaths
-import salt.utils
-import salt.exceptions
+import hvac
+import boto3
 
 log = logging.getLogger(__name__)
 
@@ -20,6 +19,7 @@ except ImportError:
     DEPS_INSTALLED = False
 
 __all__ = ['initialize']
+
 
 def __virtual__():
     return DEPS_INSTALLED
@@ -40,9 +40,9 @@ def initialized(name, ssm_path, recovery_shares=5, recovery_threshold=3):
     :rtype: dict
     """
     ret = {'name': name,
-    'comment': '',
-    'result': '',
-    'changes': {}}
+           'comment': '',
+           'result': '',
+           'changes': {}}
 
     client = hvac.Client(url='http://localhost:8200')
 
@@ -71,25 +71,26 @@ def initialized(name, ssm_path, recovery_shares=5, recovery_threshold=3):
             }
         }
 
-        #upload root token ssm parameter store
+        # upload root token ssm parameter store
         if is_success:
             ssm_client = boto3.client('ssm')
-            #saving root token
+            # saving root token
             ssm_client.put_parameter(
-                Name = '/{}/{}'.format(ssm_path, 'root_token'),
-                Value = root_token,
-                Type = "SecureString",
-                Overwrite = True
+                Name='/{}/{}'.format(ssm_path, 'root_token'),
+                Value=root_token,
+                Type="SecureString",
+                Overwrite=True
             )
 
-            #saving recovery keys
+            # saving recovery keys
             ssm_client.put_parameter(
-                Name = '/{}/{}'.format(ssm_path, 'recovery_keys'),
-                Value = json.dumps(recovery_keys),
-                Type = "SecureString",
-                Overwrite = True
+                Name='/{}/{}'.format(ssm_path, 'recovery_keys'),
+                Value=json.dumps(recovery_keys),
+                Type="SecureString",
+                Overwrite=True
             )
 
         ret['comment'] = 'Vault has {}initialized'.format(
             '' if is_success else 'failed to be ')
     return ret
+

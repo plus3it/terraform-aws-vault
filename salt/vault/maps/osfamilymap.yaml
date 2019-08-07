@@ -15,6 +15,7 @@ RedHat:
       - hvac
       - testinfra
       - boto3
+      - pyotp
 
 
 Debian:
@@ -33,3 +34,4 @@ Debian:
       - hvac
       - testinfra
       - boto3
+      - pyotp
