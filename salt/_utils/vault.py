@@ -1,4 +1,3 @@
-
 from __future__ import absolute_import, print_function, unicode_literals
 import base64
 import logging
@@ -25,6 +24,18 @@ def build_client(url='http://localhost:8200',
                 proxies=None,
                 allow_redirects=True,
                 session=None):
+    """Instantiates and returns hvac Client class for HashiCorp’s Vault.
+
+    Keyword Arguments:
+        url {str} -- Base URL for the Vault instance being addressed. (default: {'http://localhost:8200'})
+        token {str} -- Authentication token to include in requests sent to Vault. (default: {None})
+        cert {tuple} -- Certificates for use in requests sent to the Vault instance. This should be a tuple with the certificate and then key. (default: {None})
+        verify {bool} -- Either a boolean to indicate whether TLS verification should be performed when sending requests to Vault, or a string pointing at the CA bundle to use for verification. (default: {True})
+        timeout {int} -- The timeout value for requests sent to Vault. (default: {30})
+        proxies {dict} -- Proxies to use when performing requests (default: {None})
+        allow_redirects {bool} -- Whether to follow redirects when sending requests to Vault. (default: {True})
+        session {request.Session} -- Optional session object to use when performing request. (default: {None})
+    """
 
     client = hvac.Client(url=url)
 
@@ -34,6 +45,14 @@ def build_client(url='http://localhost:8200',
 
 
 def load_config_file(config_path):
+    """Retrieve config file from provided path
+
+    Arguments:
+        config_path {str} -- path to config file
+
+    Returns:
+        [obj] -- parsed object of the config
+    """
     config = None
     with open(os.path.join(config_path), 'r') as fd:
         try:

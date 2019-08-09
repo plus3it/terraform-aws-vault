@@ -51,8 +51,6 @@ class VaultAuthMethod:
 
     def __init__(self, type, path, description, config=None, auth_config=None, extra_config=None):
         """
-        Instanciate class
-
         :param type: Authentication type
         :type type: str
         :param path: Authentication mount point
@@ -118,8 +116,6 @@ class VaultSecretEngine:
 
     def __init__(self, type, path, description, config=None, secret_config=None, extra_config=None):
         """
-        Instantiate Class
-
         :param type: Secret type
         :type type: str
         :param path: Secret mount point
@@ -170,6 +166,14 @@ class VaultAuditDevice:
     options = None
 
     def __init__(self, type, path, description, options):
+        """initialize class
+
+        Arguments:
+            type {str} -- Specifies the type of the audit device.
+            path {str} -- Specifies the path in which to enable the audit device. This is part of the request URL.
+            description {str} -- Human-friendly description of the audit device.
+            options {str} -- Configuration options to pass to the audit device itself. This is dependent on the audit device type.
+        """
         self.type = type
         self.path = path.replace("/", "")
         self.description = (description if description else "")
@@ -201,6 +205,11 @@ class VaultPolicyManager():
     ret = {}
 
     def __init__(self, policies_dir_path):
+        """
+
+        Arguments:
+            policies_dir_path {str} -- Specify path to the directory contains all policies
+        """
         log.info("Initializing Vault Policy Manager...")
         self.policies_folder = policies_dir_path
 
@@ -291,7 +300,9 @@ class VaultPolicyManager():
 
     def run(self):
         """
-        Control the executions
+
+        Returns:
+            dict -- results of the execution
         """
         log.info('-------------------------------------')
         self.client = __utils__['vault.build_client']()
@@ -315,6 +326,11 @@ class VaultAuthManager():
     client = None
 
     def __init__(self, config_path):
+        """
+
+        Arguments:
+            config_path {str} -- Path of the yaml file that contains configuration options for authentication methods
+        """
         log.info("Initializing Vault Auth Manager...")
         self.config_path = config_path
 
@@ -487,7 +503,9 @@ class VaultAuthManager():
 
     def run(self):
         """
-        Control the executions
+
+        Returns:
+            dict -- results of the execution
         """
         log.info('-------------------------------------')
         self.client = __utils__['vault.build_client']()
@@ -511,6 +529,11 @@ class VaultSecretsManager():
     ret = {}
 
     def __init__(self, config_path):
+        """
+
+        Arguments:
+            config_path {str} -- Path of the yaml file that contains configuration options for secrets engines
+        """
         log.info("Initializing Vault Secret Manager...")
         self.config_path = config_path
 
@@ -710,7 +733,9 @@ class VaultSecretsManager():
 
     def run(self):
         """
-        Control the executions
+
+        Returns:
+            dict -- results of the execution
         """
         log.info('-------------------------------------')
         self.client = __utils__['vault.build_client']()
@@ -734,6 +759,11 @@ class VaultAuditManager():
     ret = {}
 
     def __init__(self, config_path):
+        """
+
+        Arguments:
+            config_path {str} -- Path of the yaml file that contains configuration options for audit devices
+        """
         log.info("Initializing Vault Audit Manager...")
         self.config_path = config_path
 
@@ -828,6 +858,11 @@ class VaultAuditManager():
                 [ob.type for ob in self.local_audit_devices]))
 
     def run(self):
+        """
+
+        Returns:
+            dict -- results of the execution
+        """
         log.info('-------------------------------------')
         self.client = __utils__['vault.build_client']()
         self.get_remote_audit_devices()
