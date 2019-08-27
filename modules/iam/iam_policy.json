@@ -7,7 +7,7 @@
             ],
             "Effect": "Allow",
             "Resource": [
-                "arn:${partition}:cloudformation:${region}:${account_id}:stack/${name}-${environment}*"
+                "arn:${partition}:cloudformation:${region}:${account_id}:stack/${stack_name}*"
             ],
             "Sid": "CfnActions"
         },
@@ -63,7 +63,7 @@
             ],
             "Effect": "Allow",
             "Resource": [
-                "arn:${partition}:logs:${region}:${account_id}:log-group:/aws/ec2/lx/${name}-${environment}*"
+                "arn:${partition}:logs:${region}:${account_id}:log-group:/aws/ec2/lx/${stack_name}*"
             ],
             "Sid": "CloudWatchLogActions"
         },

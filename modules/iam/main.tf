@@ -1,13 +1,8 @@
 ###
 ### REQUIRED VARIABLES
 ###
-variable "name" {
+variable "stack_name" {
   description = "Name of the stack"
-  type        = "string"
-}
-
-variable "environment" {
-  description = "Type of environment -- must be one of: dev, test, prod"
   type        = "string"
 }
 
@@ -65,8 +60,7 @@ data "template_file" "instance_policy" {
     region     = "${data.aws_region.current.name}"
     account_id = "${data.aws_caller_identity.current.account_id}"
 
-    name           = "${var.name}"
-    environment    = "${var.environment}"
+    stack_name     = "${var.stack_name}"
     key_id         = "${var.kms_key_id}"
     dynamodb_table = "${var.dynamodb_table}"
     bucket_name    = "${var.bucket_name}"

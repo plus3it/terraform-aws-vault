@@ -56,13 +56,16 @@ salt-call --local grains.setval vault \
 echo "[appscript]: Update minion config to allow module.run..."
 printf 'use_superseded:\n  - module.run\n' >> /etc/salt/minion
 
-echo "[appscript]: Updating salt states to include custom vault's states..."
+echo "[appscript]: Print out salt versions report"
+salt-call --local --versions-report
+
+echo "[appscript]: Updating salt states to include custom vault's states/modules..."
 salt-call --local saltutil.sync_all
 
-echo "[appscript]: Applying the vault install and configure states..."
+echo "[appscript]: Installing vault and configuring service, firewall..."
 salt-call --local --retcode-passthrough state.sls vault -l info 2>&1 | tee /var/log/salt_vault.log
 
-echo "[appscript]: Initializing the vault..."
+echo "[appscript]: Initializing vault..."
 salt-call --local --retcode-passthrough state.sls vault.initialize -l info 2>&1 | tee /var/log/salt_vault_initialize.log
 
 # Applying configurations per specific implementation
@@ -88,7 +91,7 @@ then
   salt-call --local --retcode-passthrough state.sls vault.sync -l info 2>&1 | tee /var/log/salt_vault_sync.log
 
 else
-  echo "[appscript]: No vault configurations provided. Skipping configuration steps..."
+  echo "[appscript]: No vault configurations provided. Skipping configuration vault step..."
 fi
 
 echo "[appscript]: Retrieving Vault's status"

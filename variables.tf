@@ -11,11 +11,6 @@ variable "environment" {
   type        = "string"
 }
 
-variable "bucket_name" {
-  description = "The name of the bucket will be use to store app scripts and vault's salt formula."
-  type        = "string"
-}
-
 variable "key_pair_name" {
   description = "Keypair to associate to launched instances"
   type        = "string"
@@ -29,21 +24,18 @@ variable "ami_owner" {
 variable "additional_ips_allow_inbound" {
   description = "List of ip address that allow to have access to resources"
   type        = "list"
+  default     = []
 }
 
 variable "ec2_extra_security_group_ids" {
   description = "List of additional security groups to add to EC2 instances"
   type        = "list"
+  default     = []
 }
 
 variable "ec2_subnet_ids" {
   description = "List of subnets where EC2 instances will be launched"
   type        = "list"
-}
-
-variable "lb_certificate_arn" {
-  type        = "string"
-  description = "Arn of a created certificate to be use for the load balancer"
 }
 
 variable "lb_subnet_ids" {
@@ -58,8 +50,15 @@ variable "vault_version" {
 
 variable "vault_url" {
   type        = "string"
-  description = "The DNS address that vault will be accessible at. Example: vault.domain.net"
+  description = "The DNS address that vault will be accessible at. Stack name will be used as the url when value is set to empty. Example: vault.domain.net"
+  default     = ""
 }
+
+variable "domain_name" {
+  type        = "string"
+  description = "The domain name where vault url will be registered to. Example: domain.net"
+}
+
 
 variable "kms_key_id" {
   description = "Id of an AWS KMS key use for auto unseal operation when vault is intialize"
@@ -69,12 +68,9 @@ variable "kms_key_id" {
 variable "dynamodb_table" {
   description = "Name of the Dynamodb to be used as storage backend for Vault"
   type        = "string"
+  default     = ""
 }
 
-variable "route53_zone_id" {
-  type        = "string"
-  description = "Zone ID for domain"
-}
 
 ###
 ### OPTIONAL VARIABLES
@@ -190,11 +186,6 @@ variable "toggle_update" {
   default     = "A"
   description = "(Optional) Toggle that triggers a stack update by modifying the launch config, resulting in new instances; must be one of: A or B"
   type        = "string"
-}
-
-variable "route53_enabled" {
-  description = "Creates Route53 DNS entries for Vault automatically"
-  default     = false
 }
 
 variable "tags" {

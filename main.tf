@@ -7,9 +7,8 @@ terraform {
 ###
 
 locals {
-  name_id             = "${var.name}-${random_string.this.result}"
   vpc_id              = "${data.aws_subnet.lb.0.vpc_id}"
-  role_name           = "${upper(var.name)}_INSTANCE_${data.aws_caller_identity.current.account_id}"
+  role_name           = "${upper(var.name)}-INSTANCE-${data.aws_caller_identity.current.account_id}"
   ssm_root_path       = "vault/${var.environment}/${data.aws_caller_identity.current.account_id}/${var.name}"
   public_ip           = "${chomp(data.http.ip.body)}/32"
   allow_inbound       = "${compact(distinct(concat(list(local.public_ip), var.additional_ips_allow_inbound)))}"
@@ -18,7 +17,10 @@ locals {
   appscript_file_name = "appscript.sh"
   archive_dir_path    = "${path.module}/.files"
   appscript_dir_path  = "${path.module}/scripts"
-
+  dynamodb_table      = "${var.dynamodb_table == "" ? aws_dynamodb_table.this.id : var.dynamodb_table}"
+  url                 = "${var.name}.${var.domain_name}"
+  vault_url           = "${var.vault_url == "" ? local.url : var.vault_url}"
+  stack_name          = "${var.name}-${var.environment}"
   tags = {
     Environment = "${var.environment}"
   }
@@ -66,6 +68,7 @@ data "archive_file" "salt" {
   source_dir  = "${path.module}/salt"
   output_path = "${local.archive_dir_path}/${local.archive_file_name}"
 }
+
 data "archive_file" "configs" {
   count       = "${var.configs_path == "" ? 0 : 1}"
   type        = "zip"
@@ -73,11 +76,22 @@ data "archive_file" "configs" {
   output_path = "${local.archive_dir_path}/${local.configs_file_name}"
 }
 
-# Manage Bucket module
+data "aws_route53_zone" "this" {
+  name         = "${var.domain_name}"
+  private_zone = false
+}
+
+data "aws_acm_certificate" "this" {
+  domain      = "*.${var.domain_name}"
+  types       = ["AMAZON_ISSUED"]
+  most_recent = true
+}
+
+# Manage S3 bucket module
 module "s3_bucket" {
   source = "./modules/bucket"
 
-  bucket_name = "${var.bucket_name}"
+  bucket_name = "${var.name}-appscript"
 }
 
 # Manage IAM module
@@ -85,10 +99,9 @@ module "iam" {
   source = "./modules/iam"
 
   bucket_name    = "${module.s3_bucket.bucket_name}"
-  dynamodb_table = "${var.dynamodb_table}"
-  environment    = "${var.environment}"
+  dynamodb_table = "${local.dynamodb_table}"
   kms_key_id     = "${data.aws_kms_key.this.key_id}"
-  name           = "${var.name}"
+  stack_name     = "${local.stack_name}"
   role_name      = "${local.role_name}"
   ssm_root_path  = "${local.ssm_root_path}"
 }
@@ -124,9 +137,8 @@ resource "aws_s3_bucket_object" "app_script" {
 
 # Manage domain record
 resource "aws_route53_record" "this" {
-  count   = "${var.route53_zone_id == "" || var.vault_url == "" ? 0 : 1}"
-  zone_id = "${var.route53_zone_id}"
-  name    = "${var.vault_url}"
+  zone_id = "${data.aws_route53_zone.this.zone_id}"
+  name    = "${local.vault_url}"
   type    = "A"
 
   alias {
@@ -173,7 +185,7 @@ resource "aws_lb_listener" "https" {
   port              = "443"
   protocol          = "HTTPS"
   ssl_policy        = "${var.lb_ssl_policy}"
-  certificate_arn   = "${var.lb_certificate_arn}"
+  certificate_arn   = "${data.aws_acm_certificate.this.arn}"
 
   default_action {
     target_group_arn = "${aws_lb_target_group.this.arn}"
@@ -182,7 +194,7 @@ resource "aws_lb_listener" "https" {
 }
 
 resource "aws_lb_target_group" "this" {
-  name     = "${var.name}-${var.environment}"
+  name     = "${var.name}-tg-${var.environment}"
   port     = "8200"
   protocol = "HTTP"
   vpc_id   = "${local.vpc_id}"
@@ -204,14 +216,12 @@ resource "aws_lb_target_group" "this" {
     unhealthy_threshold = "2"
   }
 
-  tags = "${merge(
-    map("Name", "${var.name}-tg"),
-  local.tags)}"
+  tags = "${merge(map("Name", "${var.name}-tg"), local.tags)}"
 }
 
 # Manage security groups
 resource "aws_security_group" "lb" {
-  name        = "${var.name}-${var.environment}"
+  name        = "${var.name}-lb-sg-${var.environment}"
   description = "Rules required for operation of ${var.name}"
   vpc_id      = "${local.vpc_id}"
 
@@ -289,7 +299,7 @@ locals {
     "${module.s3_bucket.bucket_name}/${random_string.this.result}/${local.archive_file_name}",
     "${local.s3_configs_key}",
     "${var.vault_version}",
-    "${var.dynamodb_table}",
+    "${local.dynamodb_table}",
     "${data.aws_kms_key.this.key_id}",
     "${local.ssm_root_path}"
   ]
@@ -298,11 +308,35 @@ locals {
   appscript_params = "${join(" ", local.params_for_appscript)}"
 }
 
+
+# Manage Dynamodb Tables
+resource "aws_dynamodb_table" "this" {
+  name           = "${var.name}-data"
+  read_capacity  = 5
+  write_capacity = 5
+  hash_key       = "Path"
+  range_key      = "Key"
+  attribute {
+    name = "Path"
+    type = "S"
+  }
+  attribute {
+    name = "Key"
+    type = "S"
+  }
+
+  tags = {
+    Name        = "${var.name}-data"
+    Environment = "${var.environment}"
+  }
+}
+
+
 # Manage autoscaling group
 module "autoscaling_group" {
-  source = "git::https://github.com/plus3it/terraform-aws-watchmaker//modules/lx-autoscale?ref=1.15.6"
+  source = "git::https://github.com/plus3it/terraform-aws-watchmaker//modules/lx-autoscale?ref=1.15.7"
 
-  Name            = "${var.name}-${var.environment}"
+  Name            = "${local.stack_name}"
   OnFailureAction = ""
   DisableRollback = "true"
 
@@ -336,4 +370,6 @@ module "autoscaling_group" {
   DesiredCapacity = "${var.desired_capacity}"
   MinCapacity     = "${var.min_capacity}"
   MaxCapacity     = "${var.max_capacity}"
+
+  EnableRepos = "epel"
 }
