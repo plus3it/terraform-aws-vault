@@ -15,7 +15,7 @@ firewalld_vault_zone:
       - vault
     - sources:
 {%- for mac, properties in salt.grains.get('meta-data:network:interfaces:macs', {}).items() %}
-  {%- if properties['device-number'] == "0" %}
+  {%- if properties['device-number'] | int == 0 %}
     {%- for cidr in properties['vpc-ipv4-cidr-blocks'].split('\n') %}
       - {{ cidr }}
     {%- endfor %}
