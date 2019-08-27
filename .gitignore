@@ -13,3 +13,6 @@
 
 # other uncessarry files
 .DS_Store
+
+# ignore go files
+vendor/
