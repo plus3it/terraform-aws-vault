@@ -77,16 +77,17 @@ install_package_dependencies:
     - pkgs: {{ vault.module_dependencies.pkgs | json }}
     - reload_modules: True
 
-install_pip_executable:
+{# install_pip_executable:
   cmd.run:
     - name: |
         curl -L "https://bootstrap.pypa.io/get-pip.py" > get_pip.py
-        sudo python get_pip.py pip==18.0.0
+        sudo python get_pip.py pip==19.0.0
         rm get_pip.py
-    - reload_modules: True
+    - reload_modules: True #}
 
 install_python_dependencies:
   pip.installed:
     - pkgs: {{ vault.module_dependencies.pip_deps | json }}
+    - target: /usr/lib/python3.6/site-packages
     - reload_modules: True
     - ignore_installed: True
