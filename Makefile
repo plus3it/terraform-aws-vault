@@ -112,3 +112,9 @@ docs/generate: | guard/program/terraform-docs
 	@ echo "[$@]: Creating documentation files.."
 	cat $(README_PARTS) > $(README_FILE)
 	@ echo "[$@]: Documentation files creation complete!"
+
+terratest/install: | guard/program/go guard/program/dep
+	cd tests && dep ensure
+
+terratest/test: | guard/program/go guard/program/dep
+	cd tests && go test -timeout 40m
