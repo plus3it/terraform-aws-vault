@@ -182,11 +182,11 @@ resource "aws_lb" "this" {
   security_groups = [aws_security_group.lb.id]
   subnets         = var.lb_subnet_ids
 
-  # access_logs {
-  #   enabled = true
-  #   bucket  = "${module.bucket.bucket_name}"
-  #   prefix  = "logs/lb_access_logs"
-  # }
+  access_logs {
+    enabled = var.enable_access_logs
+    bucket  = module.s3_bucket.id
+    prefix  = "ALBLogs"
+  }
 
   tags = merge({ Name = var.name }, local.tags)
 }

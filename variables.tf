@@ -97,6 +97,12 @@ variable "configs_path" {
   default     = ""
 }
 
+variable "enable_access_logs" {
+  type = bool
+  description = "Boolean indicating whether to enable access logs for load balancer"
+  default = false
+}
+
 variable "instance_type" {
   type        = string
   description = "Amazon EC2 instance type"
@@ -104,7 +110,7 @@ variable "instance_type" {
 }
 
 variable "lb_internal" {
-  type        = string
+  type        = bool
   description = "Boolean indicating whether the load balancer is internal or external"
   default     = false
 }
