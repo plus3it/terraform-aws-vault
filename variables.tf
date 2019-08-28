@@ -98,9 +98,9 @@ variable "configs_path" {
 }
 
 variable "enable_access_logs" {
-  type = bool
+  type        = bool
   description = "Boolean indicating whether to enable access logs for load balancer"
-  default = false
+  default     = false
 }
 
 variable "instance_type" {

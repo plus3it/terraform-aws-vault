@@ -100,7 +100,7 @@ json/format: | guard/program/jq
 	$(FIND_JSON) | $(XARGS) bash -c 'echo "$$(jq --indent 4 -S . "{}")" > "{}"'
 	@ echo "[$@]: Successfully formatted JSON files!"
 
-docs/%: README_PARTS := _docs/MAIN.md <(echo) <(terraform-docs markdown table .)
+docs/%: README_PARTS := _docs/MAIN.md <(echo) <(./scripts/terraform-docs.sh markdown table .)
 docs/%: README_FILE ?= README.md
 
 docs/lint: | guard/program/terraform-docs

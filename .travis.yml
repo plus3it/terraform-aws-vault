@@ -27,10 +27,10 @@ jobs:
       name: Terraform Lint/Format Verification
       install:
         - make terraform/install
-        #- make terraform-docs/install
+        - make terraform-docs/install
       script:
         - make terraform/lint
-        #- make docs/lint
+        - make docs/lint
     - stage: deploy
       if: branch = master AND type = push AND repo = allez-allez-allez/terraform-aws-vault
       before_script:
