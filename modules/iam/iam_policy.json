@@ -51,7 +51,7 @@
             ],
             "Effect": "Allow",
             "Resource": [
-                "arn:aws:kms:${region}:${account_id}:key/${key_id}"
+                "arn:aws:kms:${region}:${account_id}:key/${kms_key_id}"
             ],
             "Sid": "KMSDescribeKey"
         },

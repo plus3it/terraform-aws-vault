@@ -71,19 +71,39 @@ vault_package_install_cmd_run:
     - onchanges:
       - archive: vault_package_install_archive_extracted
 
-
 install_package_dependencies:
   pkg.installed:
     - pkgs: {{ vault.module_dependencies.pkgs | json }}
     - reload_modules: True
 
-{# install_pip_executable:
+# Python2
+{%- if salt.grains.get('pythonversion')[0] | int == 2 %}
+
+install_pip_module:
+  pkg.installed:
+    - name: python2-pip
+
+install_pip_upgrade:
   cmd.run:
-    - name: |
-        curl -L "https://bootstrap.pypa.io/get-pip.py" > get_pip.py
-        sudo python get_pip.py pip==19.0.0
-        rm get_pip.py
-    - reload_modules: True #}
+    - name: python2 -m pip install --ignore-installed --upgrade 'pip==18.0.0'
+    - unless: python2 -m pip -V | grep '18.0.0'
+    - require:
+      - pkg: install_pip_module
+    - reload_modules: True
+
+install_python_dependencies:
+  pip.installed:
+    - pkgs: {{ vault.module_dependencies.pip_deps | json }}
+    - reload_modules: True
+    - ignore_installed: True
+
+{%- endif %}
+
+# Python3
+{%- if salt.grains.get('pythonversion')[0] | int == 3 %}
+install_pip_module:
+  pkg.installed:
+    - name: python36-pip
 
 install_python_dependencies:
   pip.installed:
@@ -91,3 +111,5 @@ install_python_dependencies:
     - target: /usr/lib/python3.6/site-packages
     - reload_modules: True
     - ignore_installed: True
+{%- endif %}
+

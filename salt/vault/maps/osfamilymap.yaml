@@ -11,7 +11,6 @@ RedHat:
       - libffi-devel
       - python-devel
       - openssl-devel
-      - python36-pip
     pip_deps:
       - hvac
       - testinfra
