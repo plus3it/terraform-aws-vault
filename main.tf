@@ -1,4 +1,7 @@
-
+# ----------------------------------------------------------------------------------------------------------------------
+# REQUIRE A SPECIFIC TERRAFORM VERSION OR HIGHER
+# This module has been updated with 0.12 syntax, which means it is no longer compatible with any versions below 0.12.
+# ----------------------------------------------------------------------------------------------------------------------
 terraform {
   required_version = ">= 0.12"
 }
@@ -12,16 +15,27 @@ locals {
   archive_file_name      = "salt.zip"
   configs_file_name      = "configs.zip"
   appscript_file_name    = "appscript.sh"
+  config_dir_path        = "/etc/vault/configs"
+  logs_path              = "/var/log/vault"
+  default_enabled_repos  = ["epel"]
+  default_inbound_cdirs  = ["10.0.0.0/16", "10.0.0.0/8"]
   appscript_url          = join("/", [module.s3_bucket.id, random_string.this.result, local.appscript_file_name])
   archive_dir_path       = join("/", [path.module, ".files"])
   appscript_dir_path     = join("/", [path.module, "scripts"])
   role_name              = join("-", [upper(var.name), "INSTANCE", data.aws_caller_identity.current.account_id])
   ssm_root_path          = join("/", ["vault", var.environment, data.aws_caller_identity.current.account_id, var.name])
   s3_salt_vault_content  = join("/", [module.s3_bucket.id, random_string.this.result, local.archive_file_name])
-  s3_vault_configuration = var.configs_path == "" ? "n/a" : join("/", [module.s3_bucket.id, random_string.this.result, local.configs_file_name])
-  dynamodb_table         = var.dynamodb_table == "" ? aws_dynamodb_table.this.id : var.dynamodb_table
-  kms_key_id             = var.kms_key_id == "" ? join("", aws_kms_key.this.*.id) : var.kms_key_id
-  vault_url              = var.vault_url == "" ? join(".", [var.name, var.domain_name]) : var.vault_url
+  s3_vault_configuration = var.vault_configs_path == null ? "" : join("/", [module.s3_bucket.id, random_string.this.result, local.configs_file_name])
+  dynamodb_table         = var.dynamodb_table == null ? join("", aws_dynamodb_table.this.*.id) : var.dynamodb_table
+  kms_key_id             = var.kms_key_id == null ? join("", aws_kms_key.this.*.id) : var.kms_key_id
+  vault_url              = var.vault_url == null ? join(".", [var.name, var.domain_name]) : var.vault_url
+
+  # Logs files to be streamed to CloudWatch Logs
+  logs = [
+    join("/", [local.logs_path, "salt_call.log"]),
+    join("/", [local.logs_path, "initialize.log"]),
+    join("/", [local.logs_path, "sync_config.log"])
+  ]
 
   tags = merge(var.tags,
     {
@@ -67,9 +81,9 @@ data "archive_file" "salt" {
 }
 
 data "archive_file" "configs" {
-  count       = var.configs_path == "" ? 0 : 1
+  count       = var.vault_configs_path == null ? 0 : 1
   type        = "zip"
-  source_dir  = var.configs_path
+  source_dir  = var.vault_configs_path
   output_path = join("/", [local.archive_dir_path, local.configs_file_name])
 }
 
@@ -85,16 +99,26 @@ data "template_file" "appscript" {
   vars = {
     salt_content_archive = local.s3_salt_vault_content
     vault_config_archive = local.s3_vault_configuration
-    vault_version        = var.vault_version
-    dynamodb_table       = local.dynamodb_table
-    kms_key_id           = local.kms_key_id
-    ssm_path             = local.ssm_root_path
+
+    salt_grains_json = join("", ["'", jsonencode({
+      api_port        = var.api_port
+      cluster_port    = var.cluster_port
+      config_dir_path = local.config_dir_path
+      dynamodb_table  = local.dynamodb_table
+      inbound_cidrs   = concat(var.inbound_cidrs, local.default_inbound_cdirs)
+      kms_key_id      = local.kms_key_id
+      logs_path       = local.logs_path
+      region          = data.aws_region.current.name
+      ssm_path        = local.ssm_root_path
+      version         = var.vault_version
+    }), "'"])
   }
 }
 
 # Manage S3 bucket module
 module "s3_bucket" {
-  source = "terraform-aws-modules/s3-bucket/aws"
+  source  = "terraform-aws-modules/s3-bucket/aws"
+  version = "0.0.1"
 
   bucket = var.name
 }
@@ -134,7 +158,7 @@ resource "aws_s3_bucket_object" "salt_zip" {
 }
 
 resource "aws_s3_bucket_object" "configs_zip" {
-  count  = var.configs_path == "" ? 0 : 1
+  count  = var.vault_configs_path == null ? 0 : 1
   bucket = module.s3_bucket.id
   key    = join("/", [random_string.this.result, local.configs_file_name])
   source = join("/", [local.archive_dir_path, local.configs_file_name])
@@ -162,13 +186,13 @@ resource "aws_route53_record" "this" {
 
 # Manage KMS key
 resource "aws_kms_alias" "this" {
-  count         = var.kms_key_id == "" ? 1 : 0
+  count         = var.kms_key_id == null ? 1 : 0
   name          = "alias/${var.name}"
   target_key_id = join("", aws_kms_key.this.*.key_id)
 }
 
 resource "aws_kms_key" "this" {
-  count                   = var.kms_key_id == "" ? 1 : 0
+  count                   = var.kms_key_id == null ? 1 : 0
   description             = "KSM Key for ${var.name}"
   deletion_window_in_days = 10
 
@@ -222,7 +246,7 @@ resource "aws_lb_listener" "https" {
 
 resource "aws_lb_target_group" "this" {
   name     = var.name
-  port     = "8200"
+  port     = var.api_port
   protocol = "HTTP"
   vpc_id   = local.vpc_id
 
@@ -236,7 +260,7 @@ resource "aws_lb_target_group" "this" {
   # followers, which always just route traffic to the master
   health_check {
     path                = "/v1/sys/health?standbyok=true"
-    port                = "8200"
+    port                = var.api_port
     interval            = "5"
     timeout             = "3"
     healthy_threshold   = "2"
@@ -282,16 +306,16 @@ resource "aws_security_group" "ec2" {
   vpc_id      = local.vpc_id
 
   ingress {
-    from_port       = 8200
-    to_port         = 8200
+    from_port       = var.api_port
+    to_port         = var.api_port
     description     = "Allows traffics to come to vault"
     protocol        = "tcp"
     security_groups = [aws_security_group.lb.id]
   }
 
   ingress {
-    from_port   = 8201
-    to_port     = 8201
+    from_port   = var.cluster_port
+    to_port     = var.cluster_port
     description = "Allows traffics to route between vault nodes"
     protocol    = "tcp"
     self        = true
@@ -309,6 +333,8 @@ resource "aws_security_group" "ec2" {
 
 # Manage Dynamodb Tables
 resource "aws_dynamodb_table" "this" {
+  count = var.dynamodb_table == null ? 1 : 0
+
   name           = var.name
   read_capacity  = 5
   write_capacity = 5
@@ -328,7 +354,35 @@ resource "aws_dynamodb_table" "this" {
   tags = merge({ Name = var.name }, local.tags)
 }
 
-# # Manage autoscaling group
+resource "aws_appautoscaling_target" "this" {
+  count = var.dynamodb_table == null ? 1 : 0
+
+  max_capacity       = var.dynamodb_max_read_capacity
+  min_capacity       = var.dynamodb_min_read_capacity
+  resource_id        = join("/", ["table", local.dynamodb_table])
+  scalable_dimension = "dynamodb:table:ReadCapacityUnits"
+  service_namespace  = "dynamodb"
+}
+
+resource "aws_appautoscaling_policy" "this" {
+  count = var.dynamodb_table == null ? 1 : 0
+
+  name               = join(":", ["DynamoDBReadCapacityUtilization", join("", aws_appautoscaling_target.this.*.resource_id)])
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = join("", aws_appautoscaling_target.this.*.resource_id)
+  scalable_dimension = join("", aws_appautoscaling_target.this.*.scalable_dimension)
+  service_namespace  = join("", aws_appautoscaling_target.this.*.service_namespace)
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "DynamoDBReadCapacityUtilization"
+    }
+
+    target_value = var.dynamodb_target_value
+  }
+}
+
+# Manage autoscaling group
 module "autoscaling_group" {
   source = "git::https://github.com/plus3it/terraform-aws-watchmaker//modules/lx-autoscale?ref=1.15.7"
 
@@ -343,7 +397,7 @@ module "autoscaling_group" {
 
   CfnEndpointUrl     = var.cfn_endpoint_url
   CloudWatchAgentUrl = var.cloudwatch_agent_url
-  CloudWatchAppLogs  = ["/var/log/salt_vault.log", "/var/log/salt_vault_initialize.log", "/var/log/salt_vault_sync.log"]
+  CloudWatchAppLogs  = local.logs
   KeyPairName        = var.key_pair_name
   InstanceRole       = module.iam.profile_name
   InstanceType       = var.instance_type
@@ -366,6 +420,6 @@ module "autoscaling_group" {
   MinCapacity     = var.min_capacity
   MaxCapacity     = var.max_capacity
 
-  EnableRepos = "epel"
-}
+  EnableRepos = join(" ", concat(var.enabled_repos, local.default_enabled_repos))
 
+}

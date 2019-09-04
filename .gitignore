@@ -16,3 +16,4 @@
 
 # ignore go files
 vendor/
+.configs/

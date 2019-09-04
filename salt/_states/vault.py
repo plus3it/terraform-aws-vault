@@ -7,6 +7,11 @@ import os
 import json
 import sys
 
+import salt.config
+import salt.syspaths
+import salt.utils
+import salt.exceptions
+
 import hvac
 import boto3
 
@@ -46,7 +51,8 @@ def initialized(name, ssm_path, recovery_shares=5, recovery_threshold=3):
           'result': '',
           'changes': {}}
 
-    client = hvac.Client(url='http://localhost:8200')
+    vault_url = __utils__['vault.get_vault_url']()
+    client = hvac.Client(url=vault_url)
 
     is_initialized = client.sys.is_initialized()
 

@@ -86,7 +86,7 @@ terraform/lint: | guard/program/terraform
 sh/%: FIND_SH := find . $(FIND_EXCLUDES) -name '*.sh' -type f -print0
 sh/lint: | guard/program/shellcheck
 	@ echo "[$@]: Linting shell scripts..."
-	$(FIND_SH) | $(XARGS) shellcheck {} -e SC2154,SC2155
+	$(FIND_SH) | $(XARGS) shellcheck {} -e SC2154,SC2155,SC2086
 	@ echo "[$@]: Shell scripts PASSED lint test!"
 
 json/%: FIND_JSON := find . $(FIND_EXCLUDES) -name '*.json' -type f

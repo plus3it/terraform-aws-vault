@@ -13,12 +13,10 @@ import glob
 from collections import OrderedDict
 from datetime import datetime, timedelta
 
-
 import salt.config
 import salt.syspaths
 import salt.utils
 import salt.exceptions
-
 
 log = logging.getLogger(__name__)
 

@@ -17,8 +17,7 @@ from functools import wraps
 log = logging.getLogger(__name__)
 logging.getLogger("requests").setLevel(logging.WARNING)
 
-
-def build_client(url='http://localhost:8200',
+def build_client(url=None,
                 token=None,
                 cert=None,
                 verify=True,
@@ -29,7 +28,7 @@ def build_client(url='http://localhost:8200',
     """Instantiates and returns hvac Client class for HashiCorp’s Vault.
 
     Keyword Arguments:
-        url {str} -- Base URL for the Vault instance being addressed. (default: {'http://localhost:8200'})
+        url {str} -- Base URL for the Vault instance being addressed. (default: {None})
         token {str} -- Authentication token to include in requests sent to Vault. (default: {None})
         cert {tuple} -- Certificates for use in requests sent to the Vault instance. This should be a tuple with the certificate and then key. (default: {None})
         verify {bool} -- Either a boolean to indicate whether TLS verification should be performed when sending requests to Vault, or a string pointing at the CA bundle to use for verification. (default: {True})
@@ -38,13 +37,21 @@ def build_client(url='http://localhost:8200',
         allow_redirects {bool} -- Whether to follow redirects when sending requests to Vault. (default: {True})
         session {request.Session} -- Optional session object to use when performing request. (default: {None})
     """
-
-    client = hvac.Client(url=url)
+    vault_url = url if url != None else get_vault_url()
+    client = hvac.Client(url=vault_url)
 
     client.token = os.environ.get('VAULT_TOKEN')
 
     return client
 
+def get_vault_url():
+    '''
+    Returns a string consist of url and port number
+    '''
+    port = __grains__['vault']['api_port'] if __grains__['vault']['api_port'] != None else 8200
+    url = "https://localhost"
+
+    return "{}:{}".format(url, port)
 
 def load_config_file(config_path):
     """Retrieve config file from provided path

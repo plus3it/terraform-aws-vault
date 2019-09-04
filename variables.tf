@@ -1,6 +1,8 @@
-###
-### REQUIRED VARIABLES
-###
+# ---------------------------------------------------------------------------------------------------------------------
+# REQUIRED PARAMETERS
+# You must provide a value for each of these parameters.
+# ---------------------------------------------------------------------------------------------------------------------
+
 variable "name" {
   type        = string
   description = "Name of the vault stack, will be use to prefix resources"
@@ -51,7 +53,7 @@ variable "vault_version" {
 variable "vault_url" {
   type        = string
   description = "The DNS address that vault will be accessible at. Stack name will be used as the url when value is set to empty. Example: vault.domain.net"
-  default     = ""
+  default     = null
 }
 
 variable "domain_name" {
@@ -63,22 +65,22 @@ variable "route53_zone_id" {
   type        = string
   description = "Hosted zone ID Route 53 hosted zone"
 }
-
+# ---------------------------------------------------------------------------------------------------------------------
+# OPTIONAL PARAMETERS
+# These parameters have reasonable defaults.
+# ---------------------------------------------------------------------------------------------------------------------
 variable "kms_key_id" {
   type        = string
   description = "Id of an AWS KMS key use for auto unseal operation when vault is intialize"
-  default     = ""
+  default     = null
 }
 
 variable "dynamodb_table" {
   type        = string
   description = "Name of the Dynamodb to be used as storage backend for Vault"
-  default     = ""
+  default     = null
 }
 
-###
-### OPTIONAL VARIABLES
-###
 variable "ami_name_filter" {
   type        = string
   description = "Will be use to filter out AMI"
@@ -91,10 +93,10 @@ variable "ami_name_regex" {
   default     = "spel-minimal-centos-7-hvm-\\d{4}\\.\\d{2}\\.\\d{1}\\.x86_64-gp2"
 }
 
-variable "configs_path" {
+variable "vault_configs_path" {
   type        = string
-  description = "Path to directory that contains configuration files for vault"
-  default     = ""
+  description = "(Optional) Path to directory that contains configuration files for vault"
+  default     = null
 }
 
 variable "enable_access_logs" {
@@ -115,6 +117,12 @@ variable "lb_internal" {
   default     = false
 }
 
+variable "inbound_cidrs" {
+  type        = list(string)
+  description = "(Optional) IP address or range of addresses to be allowed to Firewall Zone."
+  default     = []
+}
+
 variable "ingress_cidr_blocks" {
   type        = list(string)
   description = "(Optional) List of CIDR block."
@@ -125,6 +133,16 @@ variable "lb_ssl_policy" {
   type        = string
   description = "The name of the SSL Policy for the listener"
   default     = "ELBSecurityPolicy-FS-2018-06"
+}
+
+variable "api_port" {
+  description = "The port to use for Vault API calls"
+  default     = 8200
+}
+
+variable "cluster_port" {
+  description = "The port to use for Vault server-to-server communication."
+  default     = 8201
 }
 
 variable "min_capacity" {
@@ -143,6 +161,30 @@ variable "desired_capacity" {
   type        = string
   description = "(Optional) Desired number of instances in the Autoscaling Group"
   default     = "2"
+}
+
+variable "dynamodb_max_read_capacity" {
+  type        = number
+  description = "(Optional) The max capacity of the scalable target for DynamoDb table autoscaling."
+  default     = 100
+}
+
+variable "dynamodb_min_read_capacity" {
+  type        = number
+  description = "(Optional) The min capacity of the scalable target for DynamoDb table autoscaling."
+  default     = 5
+}
+
+variable "dynamodb_target_value" {
+  type        = number
+  description = "(Optional) The target value for the metric of the scaling policy configuration."
+  default     = 70
+}
+
+variable "enabled_repos" {
+  type        = list(string)
+  description = "(Optional) List of repos to be enabled with yum-config-manager. Epel repo will be enabled by default."
+  default     = []
 }
 
 variable "pypi_index_url" {

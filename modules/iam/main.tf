@@ -1,25 +1,4 @@
 ###
-### REQUIRED VARIABLES
-###
-variable "policy_vars" {
-  description = "Variables for interpolation within the template. Must include the following vars: bucket_name, dynamodb_table, kms_key_id, stack_name, ssm_path"
-  type        = map(string)
-}
-
-variable "role_name" {
-  description = "Name of the role to be create for vault"
-  type        = string
-}
-###
-### OPTIONAL VARIABLES
-###
-variable "url_suffix" {
-  default     = "amazonaws.com"
-  description = "URL suffix associated with the current partition"
-  type        = string
-}
-
-###
 ### DATA
 ###
 data "aws_partition" "current" {
@@ -72,12 +51,3 @@ resource "aws_iam_instance_profile" "instance" {
   name = var.role_name
   role = aws_iam_role.instance.name
 }
-
-###
-### OUTPUTS
-###
-
-output "profile_name" {
-  value = aws_iam_instance_profile.instance.name
-}
-
