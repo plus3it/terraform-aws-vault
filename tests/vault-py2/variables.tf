@@ -32,7 +32,7 @@ variable "vault_version" {
 variable "kms_key_id" {
   description = "Id of an AWS KMS key use for auto unseal operation when vault is intialize"
   type        = string
-  default     = ""
+  default     = null
 }
 
 variable "domain_name" {
@@ -48,7 +48,7 @@ variable "route53_zone_id" {
 variable "dynamodb_table" {
   description = "Name of the Dynamodb to be used as storage backend for Vault"
   type        = string
-  default     = ""
+  default     = null
 }
 
 variable "cloudwatch_agent_url" {

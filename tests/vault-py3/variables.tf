@@ -24,17 +24,6 @@ variable "lb_subnet_ids" {
   type        = list(string)
 }
 
-variable "vault_version" {
-  description = "Version of Vault to be installed on servers"
-  type        = string
-}
-
-variable "kms_key_id" {
-  description = "Id of an AWS KMS key use for auto unseal operation when vault is intialize"
-  type        = string
-  default     = ""
-}
-
 variable "domain_name" {
   type        = string
   description = "Domain to provision test vault cluster"
@@ -43,12 +32,6 @@ variable "domain_name" {
 variable "route53_zone_id" {
   type        = string
   description = "Hosted zone ID Route 53 hosted zone"
-}
-
-variable "dynamodb_table" {
-  description = "Name of the Dynamodb to be used as storage backend for Vault"
-  type        = string
-  default     = ""
 }
 
 variable "cloudwatch_agent_url" {

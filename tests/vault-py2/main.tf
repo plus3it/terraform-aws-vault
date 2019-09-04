@@ -7,7 +7,7 @@ resource "random_id" "name" {
   prefix      = "tf-vault-"
 }
 
-module "vault-py2" {
+module "base" {
   source = "../../"
 
   environment      = var.environment
@@ -26,11 +26,16 @@ module "vault-py2" {
   route53_zone_id = var.route53_zone_id
 
   # Vault settings
-  vault_version  = var.vault_version
-  dynamodb_table = var.dynamodb_table
+  vault_version      = var.vault_version
+  vault_configs_path = "${path.module}/.configs"
+  dynamodb_table     = var.dynamodb_table
 
   # Watchmaker settings
   watchmaker_config = var.watchmaker_config
 
   toggle_update = "B"
+}
+
+output "cluster_url" {
+  value = module.base.vault_url
 }

@@ -4,7 +4,7 @@ terraform {
 
 resource "random_id" "name" {
   byte_length = 6
-  prefix      = "tf-vault-py3-"
+  prefix      = "tf-vault"
 }
 
 
@@ -12,12 +12,12 @@ module "vault-py3" {
   source = "../../"
 
   environment      = var.environment
-  desired_capacity = 1
+  desired_capacity = 2
   ami_owner        = var.ami_owner
 
   name           = "${random_id.name.hex}-py3"
   key_pair_name  = var.key_pair_name
-  kms_key_id     = var.kms_key_id
+  kms_key_id     = null
   ec2_subnet_ids = var.ec2_subnet_ids
   lb_subnet_ids  = var.lb_subnet_ids
 
@@ -27,8 +27,8 @@ module "vault-py3" {
   route53_zone_id = var.route53_zone_id
 
   # Vault settings
-  vault_version  = var.vault_version
-  dynamodb_table = var.dynamodb_table
+  vault_version  = "1.2.0"
+  dynamodb_table = null
 
   # Watchmaker settings
   watchmaker_config = var.watchmaker_config
@@ -36,3 +36,6 @@ module "vault-py3" {
   toggle_update = "B"
 }
 
+output "cluster_url" {
+  value = module.vault-py3.vault_url
+}
