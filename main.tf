@@ -100,15 +100,15 @@ data "template_file" "appscript" {
     salt_content_archive = local.s3_salt_vault_content
 
     salt_grains_json = join("", ["'", jsonencode({
-      api_port        = var.api_port
-      cluster_port    = var.cluster_port
-      dynamodb_table  = local.dynamodb_table
-      inbound_cidrs   = concat(var.inbound_cidrs, local.default_inbound_cdirs)
-      kms_key_id      = local.kms_key_id
-      logs_path       = local.logs_path
-      region          = data.aws_region.current.name
-      ssm_path        = local.ssm_root_path
-      version         = var.vault_version
+      api_port       = var.api_port
+      cluster_port   = var.cluster_port
+      dynamodb_table = local.dynamodb_table
+      inbound_cidrs  = concat(var.inbound_cidrs, local.default_inbound_cdirs)
+      kms_key_id     = local.kms_key_id
+      logs_path      = local.logs_path
+      region         = data.aws_region.current.name
+      ssm_path       = local.ssm_root_path
+      version        = var.vault_version
     }), "'"])
   }
 }

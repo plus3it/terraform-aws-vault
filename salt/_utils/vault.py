@@ -16,35 +16,35 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 
 def build_client(url=None, token=None):
 
-    vault_url = url if url != None else get_vault_url()
-    client = hvac.Client(
-        url=vault_url,
-        token=token
-    )
+	vault_url = url if url != None else get_vault_url()
+	client = hvac.Client(
+		url=vault_url,
+		token=token
+	)
 
-    if token == None:
-        client.token = os.environ.get('VAULT_TOKEN')
+	if token == None:
+		client.token = os.environ.get('VAULT_TOKEN')
 
-    return client
+	return client
 
 
 def get_vault_url():
-    '''
-    Returns a string consist of url and port number
-    '''
-    port = __grains__['vault']['api_port'] if __grains__[
-        'vault']['api_port'] != None else 8200
-    url = "http://localhost"
+	'''
+	Returns a string consist of url and port number
+	'''
+	port = __grains__['vault']['api_port'] if __grains__[
+		'vault']['api_port'] != None else 8200
+	url = "http://localhost"
 
-    return "{}:{}".format(url, port)
+	return "{}:{}".format(url, port)
 
 
 def load_config_file(config_path):
-    configs = None
-    with open(os.path.join(config_path), 'r') as fd:
-        try:
-            configs = yaml.load(fd)
-        except yaml.YAMLError as e:
-            log.critical("Unable to load conf file: " + str(e))
-            return False
-    return configs
+	configs = None
+	with open(os.path.join(config_path), 'r') as fd:
+		try:
+			configs = yaml.load(fd)
+		except yaml.YAMLError as e:
+			log.critical("Unable to load conf file: " + str(e))
+			return False
+	return configs

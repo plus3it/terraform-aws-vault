@@ -62,4 +62,3 @@ variable "watchmaker_config" {
   description = "(Optional) URL to a Watchmaker config file"
   default     = ""
 }
-
