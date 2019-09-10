@@ -98,12 +98,10 @@ data "template_file" "appscript" {
 
   vars = {
     salt_content_archive = local.s3_salt_vault_content
-    vault_config_archive = local.s3_vault_configuration
 
     salt_grains_json = join("", ["'", jsonencode({
       api_port        = var.api_port
       cluster_port    = var.cluster_port
-      config_dir_path = local.config_dir_path
       dynamodb_table  = local.dynamodb_table
       inbound_cidrs   = concat(var.inbound_cidrs, local.default_inbound_cdirs)
       kms_key_id      = local.kms_key_id
