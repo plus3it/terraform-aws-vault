@@ -1,24 +1,24 @@
-{%- from "vault/map.jinja" import vault with context -%}
-
-api_addr = "http://{{ grains['ip_interfaces']['eth0'][0] }}:{{ vault.api_port }}"
+api_addr = "http://{{ ip_address }}:{{ api_port }}"
+cluster_addr = "http://{{ ip_address }}:{{ cluster_port }}"
 
 backend "dynamodb" {
-    region = "{{ vault.region }}"
-    table = "{{ vault.dynamodb_table }}"
+    region = "{{ region }}"
+    table = "{{ dynamodb_table }}"
     ha_enabled = "true"
 }
 
 seal "awskms" {
-    region = "{{ vault.region }}"
-    kms_key_id = "{{ vault.kms_key_id }}"
+    region = "{{ region }}"
+    kms_key_id = "{{ kms_key_id }}"
 }
 
 listener "tcp" {
-    address = "{{ vault.listener_address }}:{{ vault.api_port }}"
-    tls_disable = {{ vault.listener_tls_disable }}
+    address = "{{ listener_address }}:{{ api_port }}"
+    cluster_address = "{{ listener_address }}:{{ cluster_port }}"
+    tls_disable = {{ listener_tls_disable }}
 }
 
-default_lease_ttl = "{{ vault.default_lease_ttl }}"
-max_lease_ttl = "{{ vault.max_lease_ttl }}"
+default_lease_ttl = "{{ default_lease_ttl }}"
+max_lease_ttl = "{{ max_lease_ttl }}"
 
 ui = true

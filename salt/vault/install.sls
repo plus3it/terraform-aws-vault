@@ -21,55 +21,20 @@ vault_data_dir:
     - group: vault
     - mode: '0755'
 
-vault_logs_dir:
-  file.directory:
-    - name: /etc/vault/logs
-    - user: vault
-    - group: vault
-    - mode: '0755'
-
-vault_package_install_file_directory:
-  file.directory:
-    - name: /opt/vault/bin
-    - makedirs: True
-
-vault_package_install_file_managed:
-  file.managed:
-    - name: /opt/vault/{{ vault.version }}_SHA256SUMS
-    - source: {{ vault.repo_base_url }}/{{ vault.version }}/vault_{{ vault.version }}_SHA256SUMS
-    - skip_verify: True
-    - makedirs: True
-
-vault_package_install_archive_extracted:
+install_vault_binary:
   archive.extracted:
-    - name: /opt/vault/bin
+    - name: /usr/local/bin/
     - source: {{ vault.repo_base_url }}/{{ vault.version }}/vault_{{ vault.version }}_{{ vault.platform }}.zip
     - source_hash: {{ vault.repo_base_url }}/{{ vault.version }}/vault_{{ vault.version }}_SHA256SUMS
-    - source_hash_name: vault_{{ vault.version }}_{{ vault.platform }}.zip
     - archive_format: zip
+    - if_missing: /usr/local/bin/vault
+    - source_hash_update: True
     - enforce_toplevel: False
-    - overwrite: True
-    - onchanges:
-      - file: vault_package_install_file_managed
-
-vault_package_install_service_dead:
-  service.dead:
-    - name: vault
-    - onchanges:
-      - file: vault_package_install_file_managed
-    - onlyif: test -f /etc/systemd/system/vault.service
-
-vault_package_install_file_symlink:
-  file.symlink:
+  file.managed:
     - name: /usr/local/bin/vault
-    - target: /opt/vault/bin/vault
-    - force: true
-
-vault_package_install_cmd_run:
-  cmd.run:
-    - name: setcap cap_ipc_lock=+ep /opt/vault/bin/vault
-    - onchanges:
-      - archive: vault_package_install_archive_extracted
+    - mode: '0755'
+    - require:
+      - archive: install_vault_binary
 
 install_package_dependencies:
   pkg.installed:

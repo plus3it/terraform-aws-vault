@@ -9,6 +9,12 @@ vault_service_init_file_managed:
     - name: {{ vault.service.path }}
     - source: {{ vault.service.source }}
     - template: jinja
+    - defaults:
+{%- if vault.dev_mode %}
+        config: -dev -dev-root-token-id=root -config /srv/salt/vault/files/server.dev.hcl
+{% else %}
+        config: -config=/etc/vault/conf.d
+{% endif -%}
 
 vault_service_running:
   service.running:
@@ -17,6 +23,3 @@ vault_service_running:
     - reload: True
     - require:
       - selinux: manage_selinux_mode
-    - watch:
-      - archive: vault_package_install_archive_extracted
-      - file: vault_configure_service_file
