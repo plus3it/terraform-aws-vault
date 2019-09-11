@@ -17,3 +17,7 @@
 # ignore go files
 vendor/
 .configs/
+
+
+#Vagrant related files
+.vagrant/
