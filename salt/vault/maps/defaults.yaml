@@ -19,4 +19,3 @@ vault:
   region: ""
   dynamodb_table: ""
   kms_key_id: ""
-

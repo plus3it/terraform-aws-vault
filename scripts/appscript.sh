@@ -7,7 +7,8 @@ SALT_DIR="/srv/salt"
 ARCHIVE_FILE_NAME="salt_formula.zip"
 
 # Standard aws envs
-export AWS_DEFAULT_REGION=$(curl -sSL http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/.$//')
+AWS_DEFAULT_REGION=$(curl -sSL http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/.$//')
+export AWS_DEFAULT_REGION
 
 yum install unzip jq -y
 
@@ -26,7 +27,7 @@ rm $ARCHIVE_FILE_NAME
 echo "[appscript]: Configuring salt to read ec2 metadata into grains..."
 echo "metadata_server_grains: True" > /etc/salt/minion.d/metadata.conf
 
-echo "[appscript]: Setting required salt grains for vault..."
+echo "[appscript]: Setting the required salt grains for vault..."
 salt-call --local grains.setval vault ${salt_grains_json}
 
 echo "[appscript]: Update minion config to allow module.run..."
@@ -39,26 +40,37 @@ echo "[appscript]: Updating salt states/modules/utils/grains..."
 salt-call --local saltutil.sync_all
 
 echo "[appscript]: Retrieving path for directory storing log files..."
-export LOGS_DIR=$(salt-call --local grains.get 'vault:logs_path' --output=json | jq .[] -r)
+LOGS_DIR=$(salt-call --local grains.get 'vault:logs_path' --output=json | jq .[] -r)
+export LOGS_DIR
 
 echo "[appscript]: Ensuring logs dir location exists, $LOGS_DIR..."
 mkdir -p $LOGS_DIR
 
 echo "[appscript]: Installing vault and configuring service, firewall..."
-salt-call --local --retcode-passthrough state.sls vault -l info 2>&1 | tee $LOGS_DIR/salt_call.log
+salt-call --local --retcode-passthrough state.sls vault -l info 2>&1 | tee $LOGS_DIR/state.vault.log
 
 echo "[appscript]: Initializing vault..."
-salt-call --local --retcode-passthrough state.sls vault.initialize -l info 2>&1 | tee $LOGS_DIR/initialize.log
+salt-call --local --retcode-passthrough state.sls vault.initialize -l info 2>&1 | tee $LOGS_DIR/state.vault.initialize.log
 
 echo "[appscript]: Sync configurations with the vault..."
-export SSM_PATH=$(salt-call --local grains.get 'vault:ssm_path' --output=json | jq .[] -r)
-export VAULT_TOKEN=$(aws ssm get-parameter --name /"$SSM_PATH"/root_token --with-decryption --query 'Parameter.Value' | tr -d '"')
-salt-call --local --retcode-passthrough state.sls vault.sync -l info 2>&1 | tee $LOGS_DIR/sync_config.log
+SSM_PATH=$(salt-call --local grains.get 'vault:ssm_path' --output=json | jq .[] -r)
+export SSM_PATH
+
+VAULT_TOKEN=$(aws ssm get-parameter --name /"$SSM_PATH"/root_token --with-decryption --query 'Parameter.Value' | tr -d '"')
+export VAULT_TOKEN
+
+salt-call --local --retcode-passthrough state.sls vault.sync -l info 2>&1 | tee $LOGS_DIR/state.vault.sync.log
 
 echo "[appscript]: Retrieving Vault's status"
-# Vault local address
-export API_PORT=$(salt-call --local grains.get 'vault:api_port' --output=json | jq .[])
-export VAULT_ADDR=http://127.0.0.1:$API_PORT
+# Get api port for vault server
+API_PORT=$(salt-call --local grains.get 'vault:api_port' --output=json | jq .[])
+export API_PORT
+
+# Set up vault address
+VAULT_ADDR=http://127.0.0.1:$API_PORT
+export VAULT_ADDR
+
+# Retrieve vault status
 vault status
 
 echo "[appscript]: Completed appscript vault successfully!"

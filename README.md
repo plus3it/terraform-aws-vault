@@ -6,7 +6,6 @@ Terraform module that installs and configures Hashicorp Vault cluster with HA Dy
 
 | Name | Description | Type | Default | Required |
 |------|-------------|:----:|:-----:|:-----:|
-| additional\_ips\_allow\_inbound | List of ip address that allow to have access to resources | list(string) | `<list>` | no |
 | ami\_name\_filter | Will be use to filter out AMI | string | `"spel-minimal-centos-7-hvm-*.x86_64-gp2"` | no |
 | ami\_name\_regex | Regex to help fine-grain filtering AMI | string | `"spel-minimal-centos-7-hvm-\\d{4}\\.\\d{2}\\.\\d{1}\\.x86_64-gp2"` | no |
 | ami\_owner | Account id/alias of the AMI owner | string | n/a | yes |
@@ -23,7 +22,6 @@ Terraform module that installs and configures Hashicorp Vault cluster with HA Dy
 | dynamodb\_target\_value | (Optional) The target value for the metric of the scaling policy configuration. | number | `"70"` | no |
 | ec2\_extra\_security\_group\_ids | List of additional security groups to add to EC2 instances | list(string) | `<list>` | no |
 | ec2\_subnet\_ids | List of subnets where EC2 instances will be launched | list(string) | n/a | yes |
-| enable\_access\_logs | Boolean indicating whether to enable access logs for load balancer | bool | `"false"` | no |
 | enabled\_repos | (Optional) List of repos to be enabled with yum-config-manager. Epel repo will be enabled by default. | list(string) | `<list>` | no |
 | environment | Type of environment -- must be one of: dev, test, prod | string | n/a | yes |
 | inbound\_cidrs | (Optional) IP address or range of addresses to be allowed to Firewall Zone. | list(string) | `<list>` | no |

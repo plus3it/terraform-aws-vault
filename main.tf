@@ -32,9 +32,9 @@ locals {
 
   # Logs files to be streamed to CloudWatch Logs
   logs = [
-    join("/", [local.logs_path, "salt_call.log"]),
-    join("/", [local.logs_path, "initialize.log"]),
-    join("/", [local.logs_path, "sync_config.log"])
+    join("/", [local.logs_path, "state.vault.log"]),
+    join("/", [local.logs_path, "state.vault.initialize.log"]),
+    join("/", [local.logs_path, "state.vault.sync.log"])
   ]
 
   tags = merge(var.tags,
@@ -203,12 +203,6 @@ resource "aws_lb" "this" {
   internal        = "false"
   security_groups = [aws_security_group.lb.id]
   subnets         = var.lb_subnet_ids
-
-  access_logs {
-    enabled = var.enable_access_logs
-    bucket  = module.s3_bucket.id
-    prefix  = "ALBLogs"
-  }
 
   tags = merge({ Name = var.name }, local.tags)
 }

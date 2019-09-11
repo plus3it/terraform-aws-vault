@@ -23,12 +23,6 @@ variable "ami_owner" {
   description = "Account id/alias of the AMI owner"
 }
 
-variable "additional_ips_allow_inbound" {
-  type        = list(string)
-  description = "List of ip address that allow to have access to resources"
-  default     = []
-}
-
 variable "ec2_extra_security_group_ids" {
   type        = list(string)
   description = "List of additional security groups to add to EC2 instances"
@@ -97,12 +91,6 @@ variable "vault_configs_path" {
   type        = string
   description = "(Optional) Path to directory that contains configuration files for vault"
   default     = null
-}
-
-variable "enable_access_logs" {
-  type        = bool
-  description = "Boolean indicating whether to enable access logs for load balancer"
-  default     = false
 }
 
 variable "instance_type" {
