@@ -13,5 +13,5 @@ script
   # Make sure to use all our CPUs, because Vault can block a scheduler thread
   export GOMAXPROCS=`nproc`
 
-  exec /usr/local/bin/vault server {{ config }} >>/var/log/vault.log 2>&1
+  exec /usr/local/bin/vault server -config=/etc/vault/conf.d {{ dev_configs }} >>/var/log/vault.log 2>&1
 end script
