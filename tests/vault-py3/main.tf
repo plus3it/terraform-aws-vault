@@ -12,8 +12,8 @@ module "vault-py3" {
   source = "../../"
 
   environment      = var.environment
-  desired_capacity = 2
-  ami_owner        = var.ami_owner
+  desired_capacity = 1
+  ami_owners       = var.ami_owners
 
   name           = "${random_id.name.hex}-py3"
   key_pair_name  = var.key_pair_name

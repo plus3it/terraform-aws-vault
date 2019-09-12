@@ -18,9 +18,9 @@ variable "key_pair_name" {
   description = "Keypair to associate to launched instances"
 }
 
-variable "ami_owner" {
-  type        = string
-  description = "Account id/alias of the AMI owner"
+variable "ami_owners" {
+  type        = list(string)
+  description = "Account id/alias of the AMI owners"
 }
 
 variable "ec2_extra_security_group_ids" {
@@ -59,6 +59,7 @@ variable "route53_zone_id" {
   type        = string
   description = "Hosted zone ID Route 53 hosted zone"
 }
+
 # ---------------------------------------------------------------------------------------------------------------------
 # OPTIONAL PARAMETERS
 # These parameters have reasonable defaults.
@@ -75,10 +76,10 @@ variable "dynamodb_table" {
   default     = null
 }
 
-variable "ami_name_filter" {
-  type        = string
+variable "ami_name_filters" {
+  type        = list(string)
   description = "Will be use to filter out AMI"
-  default     = "spel-minimal-centos-7-hvm-*.x86_64-gp2"
+  default     = ["spel-minimal-centos-7-hvm-*.x86_64-gp2"]
 }
 
 variable "ami_name_regex" {
@@ -102,7 +103,13 @@ variable "instance_type" {
 variable "lb_internal" {
   type        = bool
   description = "Boolean indicating whether the load balancer is internal or external"
-  default     = false
+  default     = true
+}
+
+variable "certificate_arn" {
+  type        = string
+  description = "The ARN of the default SSL server certificate to be use for HTTPS lb listener."
+  default     = null
 }
 
 variable "inbound_cidrs" {

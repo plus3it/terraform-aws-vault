@@ -19,15 +19,17 @@ locals {
   logs_path              = "/var/log/vault"
   default_enabled_repos  = ["epel"]
   default_inbound_cdirs  = ["10.0.0.0/16", "10.0.0.0/8"]
-  appscript_url          = join("/", [module.s3_bucket.id, random_string.this.result, local.appscript_file_name])
+  s3_bucket_name         = join("-", [var.name, random_string.this.result])
+  appscript_url          = join("/", [module.s3_bucket.id, local.appscript_file_name])
   archive_dir_path       = join("/", [path.module, ".files"])
   appscript_dir_path     = join("/", [path.module, "scripts"])
   role_name              = join("-", [upper(var.name), "INSTANCE", data.aws_caller_identity.current.account_id])
   ssm_root_path          = join("/", ["vault", var.environment, data.aws_caller_identity.current.account_id, var.name])
-  s3_salt_vault_content  = join("/", [module.s3_bucket.id, random_string.this.result, local.archive_file_name])
-  s3_vault_configuration = var.vault_configs_path == null ? "" : join("/", [module.s3_bucket.id, random_string.this.result, local.configs_file_name])
+  s3_salt_vault_content  = join("/", [module.s3_bucket.id, local.archive_file_name])
+  s3_vault_configuration = var.vault_configs_path == null ? "" : join("/", [module.s3_bucket.id, local.configs_file_name])
   dynamodb_table         = var.dynamodb_table == null ? join("", aws_dynamodb_table.this.*.id) : var.dynamodb_table
   kms_key_id             = var.kms_key_id == null ? join("", aws_kms_key.this.*.id) : var.kms_key_id
+  certificate_arn        = var.certificate_arn == null ? join("", aws_acm_certificate.this.*.id) : var.certificate_arn
   vault_url              = var.vault_url == null ? join(".", [var.name, var.domain_name]) : var.vault_url
 
   # Logs files to be streamed to CloudWatch Logs
@@ -60,11 +62,11 @@ data "aws_region" "current" {
 data "aws_ami" "this" {
   most_recent = "true"
 
-  owners     = [var.ami_owner]
+  owners     = var.ami_owners
   name_regex = var.ami_name_regex
   filter {
     name   = "name"
-    values = [var.ami_name_filter]
+    values = var.ami_name_filters
   }
 }
 
@@ -85,12 +87,6 @@ data "archive_file" "configs" {
   type        = "zip"
   source_dir  = var.vault_configs_path
   output_path = join("/", [local.archive_dir_path, local.configs_file_name])
-}
-
-data "aws_acm_certificate" "this" {
-  domain      = join(".", ["*", var.domain_name])
-  types       = ["AMAZON_ISSUED"]
-  most_recent = true
 }
 
 data "template_file" "appscript" {
@@ -118,7 +114,7 @@ module "s3_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "0.0.1"
 
-  bucket = var.name
+  bucket = local.s3_bucket_name
 }
 
 
@@ -133,7 +129,7 @@ module "iam" {
 
   role_name = local.role_name
   policy_vars = {
-    bucket_name    = var.name
+    bucket_name    = module.s3_bucket.id
     dynamodb_table = local.dynamodb_table
     kms_key_id     = local.kms_key_id
     stack_name     = var.name
@@ -144,13 +140,14 @@ module "iam" {
 # Generate a random id for each deployment
 resource "random_string" "this" {
   length  = 8
-  special = "false"
+  special = false
+  upper   = false
 }
 
 # Manage archive and appscript files
 resource "aws_s3_bucket_object" "salt_zip" {
   bucket = module.s3_bucket.id
-  key    = join("/", [random_string.this.result, local.archive_file_name])
+  key    = local.archive_file_name
   source = join("/", [local.archive_dir_path, local.archive_file_name])
   etag   = data.archive_file.salt.output_md5
 }
@@ -158,17 +155,32 @@ resource "aws_s3_bucket_object" "salt_zip" {
 resource "aws_s3_bucket_object" "configs_zip" {
   count  = var.vault_configs_path == null ? 0 : 1
   bucket = module.s3_bucket.id
-  key    = join("/", [random_string.this.result, local.configs_file_name])
+  key    = local.configs_file_name
   source = join("/", [local.archive_dir_path, local.configs_file_name])
   etag   = data.archive_file.configs[count.index].output_md5
 }
 
 resource "aws_s3_bucket_object" "app_script" {
   bucket  = module.s3_bucket.id
-  key     = join("/", [random_string.this.result, local.appscript_file_name])
+  key     = local.appscript_file_name
   content = data.template_file.appscript.rendered
   etag    = md5(data.template_file.appscript.rendered)
 }
+
+# Manage KMS key
+resource "aws_kms_alias" "this" {
+  count         = var.kms_key_id == null ? 1 : 0
+  name          = "alias/${var.name}"
+  target_key_id = join("", aws_kms_key.this.*.key_id)
+}
+
+resource "aws_kms_key" "this" {
+  count       = var.kms_key_id == null ? 1 : 0
+  description = "KMS Key for ${var.name}"
+
+  tags = merge({ Name = var.name }, local.tags)
+}
+
 # Manage domain record
 resource "aws_route53_record" "this" {
   zone_id = var.route53_zone_id
@@ -182,25 +194,41 @@ resource "aws_route53_record" "this" {
   }
 }
 
-# Manage KMS key
-resource "aws_kms_alias" "this" {
-  count         = var.kms_key_id == null ? 1 : 0
-  name          = "alias/${var.name}"
-  target_key_id = join("", aws_kms_key.this.*.key_id)
-}
+# Manage certificate
+resource "aws_acm_certificate" "this" {
+  count = var.certificate_arn == null ? 1 : 0
 
-resource "aws_kms_key" "this" {
-  count                   = var.kms_key_id == null ? 1 : 0
-  description             = "KSM Key for ${var.name}"
-  deletion_window_in_days = 10
+  domain_name       = local.vault_url
+  validation_method = "DNS"
 
   tags = merge({ Name = var.name }, local.tags)
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_route53_record" "cert_validation" {
+  count = var.certificate_arn == null ? 1 : 0
+
+  name    = join("", aws_acm_certificate.this.*.domain_validation_options.0.resource_record_name)
+  type    = join("", aws_acm_certificate.this.*.domain_validation_options.0.resource_record_type)
+  zone_id = var.route53_zone_id
+  records = ["${join("", aws_acm_certificate.this.*.domain_validation_options.0.resource_record_value)}"]
+  ttl     = 60
+}
+
+resource "aws_acm_certificate_validation" "this" {
+  count = var.certificate_arn == null ? 1 : 0
+
+  certificate_arn         = join("", aws_acm_certificate.this.*.arn)
+  validation_record_fqdns = ["${join("", aws_route53_record.cert_validation.*.fqdn)}"]
 }
 
 # Manage load balancer
 resource "aws_lb" "this" {
   name            = var.name
-  internal        = "false"
+  internal        = var.lb_internal
   security_groups = [aws_security_group.lb.id]
   subnets         = var.lb_subnet_ids
 
@@ -228,7 +256,7 @@ resource "aws_lb_listener" "https" {
   port              = "443"
   protocol          = "HTTPS"
   ssl_policy        = var.lb_ssl_policy
-  certificate_arn   = data.aws_acm_certificate.this.arn
+  certificate_arn   = local.certificate_arn
 
   default_action {
     target_group_arn = aws_lb_target_group.this.arn
@@ -265,7 +293,7 @@ resource "aws_lb_target_group" "this" {
 # Manage security groups
 resource "aws_security_group" "lb" {
   name        = "${var.name}-lb"
-  description = "Allow web traffic to the load balancer"
+  description = "Allow web traffic to the ${var.name} load balancer"
   vpc_id      = local.vpc_id
 
   ingress {
@@ -294,7 +322,7 @@ resource "aws_security_group" "lb" {
 
 resource "aws_security_group" "ec2" {
   name        = "${var.name}-ec2"
-  description = "Allow vault traffic between ALB and EC2 instances"
+  description = "Allow vault traffic between ${var.name} ALB and EC2 instances"
   vpc_id      = local.vpc_id
 
   ingress {
@@ -393,8 +421,8 @@ module "autoscaling_group" {
   KeyPairName        = var.key_pair_name
   InstanceRole       = module.iam.profile_name
   InstanceType       = var.instance_type
-  NoReboot           = "true"
-  NoPublicIp         = "false"
+  NoReboot           = true
+  NoPublicIp         = true
   PypiIndexUrl       = var.pypi_index_url
   SecurityGroupIds   = join(",", compact(concat([aws_security_group.ec2.id], var.ec2_extra_security_group_ids)))
   SubnetIds          = join(",", var.ec2_subnet_ids)

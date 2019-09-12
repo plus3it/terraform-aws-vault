@@ -6,10 +6,11 @@ Terraform module that installs and configures Hashicorp Vault cluster with HA Dy
 
 | Name | Description | Type | Default | Required |
 |------|-------------|:----:|:-----:|:-----:|
-| ami\_name\_filter | Will be use to filter out AMI | string | `"spel-minimal-centos-7-hvm-*.x86_64-gp2"` | no |
+| ami\_name\_filters | Will be use to filter out AMI | list(string) | `<list>` | no |
 | ami\_name\_regex | Regex to help fine-grain filtering AMI | string | `"spel-minimal-centos-7-hvm-\\d{4}\\.\\d{2}\\.\\d{1}\\.x86_64-gp2"` | no |
-| ami\_owner | Account id/alias of the AMI owner | string | n/a | yes |
+| ami\_owners | Account id/alias of the AMI owners | list(string) | n/a | yes |
 | api\_port | The port to use for Vault API calls | string | `"8200"` | no |
+| certificate\_arn | The ARN of the default SSL server certificate to be use for HTTPS lb listener. | string | `"null"` | no |
 | cfn\_bootstrap\_utils\_url | (Optional) URL to aws-cfn-bootstrap-latest.tar.gz | string | `"https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz"` | no |
 | cfn\_endpoint\_url | (Optional) URL to the CloudFormation Endpoint. e.g. https://cloudformation.us-east-1.amazonaws.com | string | `"https://cloudformation.us-east-1.amazonaws.com"` | no |
 | cloudwatch\_agent\_url | (Optional) S3 URL to CloudWatch Agent installer. Example: s3://amazoncloudwatch-agent/linux/amd64/latest/AmazonCloudWatchAgent.zip | string | `""` | no |
@@ -29,7 +30,7 @@ Terraform module that installs and configures Hashicorp Vault cluster with HA Dy
 | instance\_type | Amazon EC2 instance type | string | `"t2.medium"` | no |
 | key\_pair\_name | Keypair to associate to launched instances | string | n/a | yes |
 | kms\_key\_id | Id of an AWS KMS key use for auto unseal operation when vault is intialize | string | `"null"` | no |
-| lb\_internal | Boolean indicating whether the load balancer is internal or external | bool | `"false"` | no |
+| lb\_internal | Boolean indicating whether the load balancer is internal or external | bool | `"true"` | no |
 | lb\_ssl\_policy | The name of the SSL Policy for the listener | string | `"ELBSecurityPolicy-FS-2018-06"` | no |
 | lb\_subnet\_ids | List of subnets to associate to the Load Balancer | list(string) | n/a | yes |
 | max\_capacity | (Optional) Maximum number of instances in the Autoscaling Group | string | `"2"` | no |

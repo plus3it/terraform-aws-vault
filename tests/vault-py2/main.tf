@@ -12,7 +12,7 @@ module "base" {
 
   environment      = var.environment
   desired_capacity = 1
-  ami_owner        = var.ami_owner
+  ami_owners       = var.ami_owners
 
   name           = "${random_id.name.hex}-py2"
   key_pair_name  = var.key_pair_name
@@ -24,6 +24,7 @@ module "base" {
 
   domain_name     = var.domain_name
   route53_zone_id = var.route53_zone_id
+  certificate_arn = var.certificate_arn
 
   # Vault settings
   vault_version      = var.vault_version

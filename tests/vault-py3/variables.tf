@@ -9,9 +9,9 @@ variable "key_pair_name" {
   type        = string
 }
 
-variable "ami_owner" {
+variable "ami_owners" {
   description = "Account id/alias of the AMI owner"
-  type        = string
+  type        = list(string)
 }
 
 variable "ec2_subnet_ids" {

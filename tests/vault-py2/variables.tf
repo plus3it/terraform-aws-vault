@@ -9,9 +9,9 @@ variable "key_pair_name" {
   type        = string
 }
 
-variable "ami_owner" {
+variable "ami_owners" {
   description = "Account id/alias of the AMI owner"
-  type        = string
+  type        = list(string)
 }
 
 variable "ec2_subnet_ids" {
@@ -43,6 +43,12 @@ variable "domain_name" {
 variable "route53_zone_id" {
   type        = string
   description = "Hosted zone ID Route 53 hosted zone"
+}
+
+variable "certificate_arn" {
+  type        = string
+  description = "The ARN of the default SSL server certificate to be use for HTTPS lb listener."
+  default     = null
 }
 
 variable "dynamodb_table" {
