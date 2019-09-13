@@ -16,12 +16,6 @@ sync_secrets_engines:
         config:
           default_lease_ttl: 1800
           max_lease_ttl: 1800
-      - type: database
-        path: db1
-        description: database secrets mount
-        config:
-          default_lease_ttl: 30m
-          max_lease_ttl: 60m
 
 sync_authentication_methods:
   vault.auth_methods_synced:
@@ -39,7 +33,7 @@ sync_audit_devices:
       - type: file
         path: file_log
         description: first audit device
-        options:
+        config:
           file_path: /etc/vault/logs/audit.log
 
 sync_policies:

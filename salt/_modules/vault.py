@@ -14,13 +14,12 @@ from collections import OrderedDict
 
 log = logging.getLogger(__name__)
 
+DEPS_INSTALLED = False
 try:
     import hvac
     DEPS_INSTALLED = True
-except ImportError as e:
-    log.debug('Unable to import the dependencies...')
-    log.exception(e)
-    DEPS_INSTALLED = False
+except ImportError:
+    pass
 
 
 class InsufficientParameters(Exception):
@@ -28,7 +27,10 @@ class InsufficientParameters(Exception):
 
 
 def __virtual__():
-    return DEPS_INSTALLED
+    if DEPS_INSTALLED:
+        return 'vault'
+    else:
+        return False, 'Missing required dependency, `hvac`'
 
 
 def get_policies_manager():
@@ -71,151 +73,83 @@ def get_audit_device_manager():
     return VaultAuditManager()
 
 
-class VaultAuthMethod:
+class VaultConfigBase:
     type = None
     path = None
     description = None
     config = None
-    auth_config = None
-    extra_config = None
 
-    def __init__(self, type, path, description, config=None, auth_config=None, extra_config=None):
-        """
-        Instanciate class
+    def __init__(self, type, path, description, config):
+        """[summary]
 
-        :param type: Authentication type
-        :type type: str
-        :param path: Authentication mount point
-        :type path: str
-        :param description: Authentication description
-        :type description: str
-        :param config: Authentication config
-        :type config: dict
-        :param auth_config: Authentification specific configuration
-        :type auth_config: dict
-        :param extra_config: Extra Authentification configurations
-        :type extra_config: dict
+        Arguments:
+            type {string} -- The type of the config
+            path {string} -- The path in which to enable the config
+            description {[type]} -- A human-friendly description
         """
+
+        config = config or {}
+
         self.type = type
         self.path = path.replace("/", "")
         self.description = (description if description else "")
-        self.config = {}
-        for elem in config:
-            if config[elem] != "":
-                self.config[elem] = config[elem]
-        self.auth_config = auth_config
-        self.extra_config = extra_config
+        self.config = {k: v for k, v in config.items() if v != ''}
 
     def get_unique_id(self):
         """
-        Return a unique hash by auth method only using the type and path
+        Return a unique hash of the config by only using the type and path
 
-        :return: str
+        Returns:
+            string -- unique hash of the type and path
         """
-        unique_str = str(self.type + self.path)
-        sha256_hash = hashlib.sha256(unique_str.encode()).hexdigest()
-        return sha256_hash
+        return self.hash_value(self.type + self.path)
 
     def get_tuning_hash(self):
         """
         Return a unique ID per tuning configuration
 
-        :return: str
+        Returns:
+          string -- unique hash of the configuration
         """
-        conf_str = self.description + str(self.config)
-        sha256_hash = hashlib.sha256(conf_str.encode()).hexdigest()
-        return sha256_hash
+        return self.hash_value(self.description + str(self.config))
+
+    def hash_value(self, value):
+        return hashlib.sha256(value.encode()).hexdigest()
 
     def __eq__(self, other):
         return self.get_unique_id() == other.get_unique_id()
 
     def __repr__(self):
-        return ("Path: %s - Type: %s - Desc: %s - Options: %s - Hash : %s" %
+        return ("Path: %s - Type: %s - Desc: %s - Config: %s - Hash : %s" %
                 (self.path, self.type, self.description, str(self.config), self.get_unique_id()))
 
 
-class VaultSecretEngine:
-    """
-    Vault secrete engine container
-    """
-    type = None
-    path = None
-    description = None
-    config = None
+class VaultAuthMethod(VaultConfigBase):
+    auth_config = None
+    extra_config = None
+
+    def __init__(self, type, path, description, config=None, auth_config=None, extra_config=None):
+        super().__init__(type, path, description, config)
+
+        self.auth_config = auth_config or {}
+        self.extra_config = extra_config or {}
+
+
+class VaultSecretEngine(VaultConfigBase):
     secret_config = None
     extra_config = None
 
     def __init__(self, type, path, description, config=None, secret_config=None, extra_config=None):
-        """
-        Instantiate Class
+        super().__init__(type, path, description, config)
 
-        :param type: Secret type
-        :type type: str
-        :param path: Secret mount point
-        :type path: str
-        :param description: Secret description
-        :type description: str
-        :param config: Secret basic config
-        :type config: dict
-        :param secret_config: Secret specific configuration
-        :type secret_config: dict
-        :param extra_config: Secret extra configuration
-        :type extra_config: dict
-        """
-        self.type = type
-        self.path = path.replace("/", "")
-        self.description = (description if description else "")
-        self.config = dict()
-        self.config["force_no_cache"] = False
-        for elem in config:
-            if config[elem] != "":
-                self.config[elem] = config[elem]
-        self.secret_config = secret_config
-        self.extra_config = extra_config
-
-    def get_unique_id(self):
-        """
-        Return a unique hash by secret engine only using the type and path
-
-        :return: str
-        """
-        unique_str = str(self.type + self.path)
-        sha256_hash = hashlib.sha256(unique_str.encode()).hexdigest()
-        return sha256_hash
-
-    def __eq__(self, other):
-        return self.get_unique_id() == other.get_unique_id()
-
-    def __repr__(self):
-        return ("Path: %s - Type: %s - Desc: %s - Options: %s - Hash : %s" %
-                (self.path, self.type, self.description, str(self.config), self.get_unique_id()))
+        self.secret_config = secret_config or {}
+        self.extra_config = extra_config or {}
 
 
-class VaultAuditDevice:
-    type = None
-    path = None
-    description = None
-    options = None
+class VaultAuditDevice(VaultConfigBase):
 
-    def __init__(self, type, path, description, options):
-        self.type = type
-        self.path = path.replace("/", "")
-        self.description = (description if description else "")
-        self.options = options
-
-    def get_device_unique_id(self):
-        unique_str = str(self.type + self.path +
-                        self.description + str(self.options))
-        sha256_hash = hashlib.sha256(unique_str.encode()).hexdigest()
-        return sha256_hash
-
-    def __eq__(self, other):
-        return self.get_device_unique_id() == other.get_device_unique_id()
-
-    def __repr__(self):
-        return ("Path: %s - Type: %s - Desc: %s - Options: %s - Hash : %s" %
-                (self.path, self.type, self.description, str(self.options), self.get_device_unique_id()))
-
+    def __init__(self, type, path, description, config=None):
+        super().__init__(type, path, description, config)
 
 class VaultPolicyManager():
     """
@@ -242,9 +176,8 @@ class VaultPolicyManager():
                       ', '.join(polices))
             log.info('Finished retrieving policies from vault.')
 
-        except Exception as e:
-            ret['result'] = False
-            log.exception(e)
+        except Exception:
+            raise
 
         return polices
 
@@ -295,13 +228,12 @@ class VaultPolicyManager():
 
             # Build return object
             ret['changes']['old'] = remote_policies
-            if len(new_policies) > 0:
+            if new_policies:
                 ret['changes']['new'] = json.loads(json.dumps(new_policies))
             else:
                 ret['changes']['new'] = "No changes"
-        except Exception as e:
-            ret['result'] = False
-            log.exception(e)
+        except Exception:
+            raise
 
     def cleanup_policies(self, client, remote_policies, local_policies, ret):
         """
@@ -323,31 +255,8 @@ class VaultPolicyManager():
                     [ob['name'] for ob in local_policies]))
 
             log.info('Finished cleaning up vault policies.')
-        except Exception as e:
-            ret['result'] = False
-            log.exception(e)
-
-    def sync(self, client, policy_dir, ret):
-
-        log.info('-------------------------------------')
-
-        remote_policies = []
-        local_policies = []
-
-        if client == None:
-            client = __utils__['vault.build_client']()
-        try:
-            remote_policies = self.get_remote_policies(client, ret)
-            local_policies = self.get_local_policies(policy_dir, ret)
-            self.push_policies(client, remote_policies, local_policies, ret)
-            self.cleanup_policies(client, remote_policies, local_policies, ret)
-
-            ret['result'] = True
-        except Exception as e:
-            ret['result'] = False
-            log.exception(e)
-        log.info('-------------------------------------')
-        return ret
+        except Exception:
+            raise
 
 
 class VaultAuthManager():
@@ -465,7 +374,7 @@ class VaultAuthManager():
                         'Provisioning extra configurations for auth method "%s"', auth_method.type)
                     # Get LDAP group mapping from vault
                     ldap_list_group_response = client.auth.ldap.list_groups()
-                    if ldap_list_group_response != None:
+                    if ldap_list_group_response:
                         ldap_groups = ldap_list_group_response["data"]["keys"]
 
                     log.debug("LDAP groups from vault: %s", str(ldap_groups))
@@ -484,7 +393,7 @@ class VaultAuthManager():
                         )
 
                     # Clean up LDAP group mapping
-                    if ldap_groups != None:
+                    if ldap_groups:
                         for group in ldap_groups:
                             if group in {k.lower(): v for k, v in local_config_groups.items()}:
                                 log.debug(
@@ -492,9 +401,7 @@ class VaultAuthManager():
                             else:
                                 log.info(
                                     'LDAP group mapping ["%s"] does not exists in configuration, deleting...', group)
-                                client.auth.ldap.delete_group(
-                                    name=group
-                                )
+                                client.auth.ldap.delete_group(name=group)
                                 log.info(
                                     'LDAP group mapping ["%s"] deleted.', group)
                 else:
@@ -505,7 +412,7 @@ class VaultAuthManager():
             ret['changes']['old'] = json.loads(json.dumps(
                 [ob.type for ob in remote_methods]))
 
-            if len(new_auth_methods) > 0:
+            if new_auth_methods:
                 ret['changes']['new'] = json.loads(
                     json.dumps(new_auth_methods))
             else:
@@ -585,20 +492,20 @@ class VaultSecretsManager():
                 secret_config = None
                 extra_config = None
 
+                if 'config' in secret_engine:
+                    if secret_engine["config"]:
+                        config = OrderedDict(
+                            sorted(secret_engine["config"].items()))
+
                 if 'secret_config' in secret_engine:
-                    if secret_engine["secret_config"] != None:
+                    if secret_engine["secret_config"]:
                         secret_config = OrderedDict(
                             sorted(secret_engine["secret_config"].items()))
 
                 if 'extra_config' in secret_engine:
-                    if secret_engine["extra_config"] != None:
+                    if secret_engine["extra_config"]:
                         extra_config = OrderedDict(
                             sorted(secret_engine["extra_config"].items()))
-
-                if 'config' in secret_engine:
-                    if secret_engine["config"] != None:
-                        config = OrderedDict(
-                            sorted(secret_engine["config"].items()))
 
                 local_secret_engines.append(VaultSecretEngine(
                     type=secret_engine["type"],
@@ -653,7 +560,7 @@ class VaultSecretsManager():
                     log.debug('Secret engine " % s" at path " % s" is enabled.',
                               secret_engine.type, secret_engine.path)
 
-                if secret_engine.secret_config != None:
+                if secret_engine.secret_config:
                     log.info(
                         'Provisioning specific configurations for "%s" secrets engine...', secret_engine.type)
 
@@ -669,7 +576,7 @@ class VaultSecretsManager():
                     log.info(
                         'Finished provisioning specific configurations for "%s" secrets engine...', secret_engine.type)
 
-                if secret_engine.extra_config != None:
+                if secret_engine.extra_config:
                     log.info(
                         'Provisioning extra conifgurations for for "%s" secrets engine...', secret_engine.type)
 
@@ -679,8 +586,8 @@ class VaultSecretsManager():
                         try:
                             existing_roles = client.secrets.activedirectory.list_roles()
                             log.debug(existing_roles)
-                        except Exception as e:
-                            log.exception(e)
+                        except Exception:
+                            raise
 
                         # Add new roles
                         local_roles = secret_engine.extra_config['roles']
@@ -693,12 +600,11 @@ class VaultSecretsManager():
                                     service_account_name=local_roles[key]['service_account_name'],
                                     ttl=local_roles[key]['ttl']
                                 )
-                            except Exception as e:
-                                log.exception(e)
-                                raise salt.exceptions.SaltInvocationError(e)
+                            except Exception:
+                                raise
 
                         # Remove missing roles
-                        if existing_roles != None:
+                        if existing_roles:
                             for role in existing_roles:
                                 if role in {k.lower(): v for k, v in local_roles.items()}:
                                     log.debug(
@@ -724,7 +630,7 @@ class VaultSecretsManager():
         ret['changes']['old'] = json.loads(json.dumps([
             "Type: {} - Path: {}".format(ob.type, ob.path) for ob in remote_engines]))
 
-        if len(new_secrets_engines) > 0:
+        if new_secrets_engines:
             ret['changes']['new'] = json.loads(
                 json.dumps(new_secrets_engines))
         else:
@@ -775,6 +681,7 @@ class VaultAuditManager():
         devices = []
         try:
             audit_devices_resp = client.sys.list_enabled_audit_devices()
+            log.debug(audit_devices_resp)
             for device in audit_devices_resp['data']:
                 audit_device = audit_devices_resp[device]
                 devices.append(
@@ -783,7 +690,8 @@ class VaultAuditManager():
                         path=(audit_device["path"]
                               if 'path' in audit_device else device),
                         description=audit_device["description"],
-                        options=json.dumps(audit_device["options"])
+                        config=OrderedDict(
+                            sorted(audit_device["options"].items()))
                     )
                 )
 
@@ -799,16 +707,18 @@ class VaultAuditManager():
         if configs:
             try:
                 for audit_device in configs:
-                    if 'options' in audit_device:
-                        options = json.dumps(audit_device["options"])
-                        log.debug(options)
+                    config = None
+                    if 'config' in audit_device:
+                        if audit_device['config']:
+                            config = OrderedDict(
+                                sorted(audit_device["config"].items()))
 
                     devices.append(
                         VaultAuditDevice(
                             type=audit_device["type"],
                             path=audit_device["path"],
                             description=audit_device["description"],
-                            options=options
+                            config=config
                         )
                     )
 
@@ -840,7 +750,7 @@ class VaultAuditManager():
                         device_type=audit_device.type,
                         path=audit_device.path,
                         description=audit_device.description,
-                        options=json.loads(audit_device.options)
+                        options=audit_device.config
                     )
                     log.debug('Audit device "%s" at path "%s" is enabled.',
                               audit_device.type, audit_device.path)
@@ -850,7 +760,7 @@ class VaultAuditManager():
             ret['changes']['old'] = json.loads(json.dumps(
                 [ob.type for ob in remote_devices]))
 
-            if len(new_audit_devices) > 0:
+            if new_audit_devices:
                 ret['changes']['new'] = json.loads(
                     json.dumps(new_audit_devices))
             else:

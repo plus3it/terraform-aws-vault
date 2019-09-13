@@ -5,20 +5,24 @@ import json
 
 log = logging.getLogger(__name__)
 
+DEPS_INSTALLED = False
+IMPORT_ERROR = ""
 try:
     import hvac
     import boto3
     DEPS_INSTALLED = True
 except ImportError as e:
-    log.debug('Unable to import the libraries.')
-    log.exception(e)
-    DEPS_INSTALLED = False
+    IMPORT_ERROR = e
+    pass
 
 __all__ = ['initialize']
 
 
 def __virtual__():
-    return DEPS_INSTALLED
+    if DEPS_INSTALLED:
+        return 'vault'
+    else:
+        return False, 'Missing required dependency. {}'.format(IMPORT_ERROR)
 
 
 def initialized(name, ssm_path, recovery_shares=5, recovery_threshold=3):

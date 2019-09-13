@@ -1,14 +1,8 @@
 
-from __future__ import absolute_import, print_function, unicode_literals
+from __future__ import absolute_import
 import logging
 import os
-import requests
-import json
-import yaml
 import hvac
-from collections import OrderedDict
-from functools import wraps
-
 
 log = logging.getLogger(__name__)
 logging.getLogger("requests").setLevel(logging.WARNING)
@@ -37,14 +31,3 @@ def get_vault_url():
     url = "http://localhost"
 
     return "{}:{}".format(url, port)
-
-
-def load_config_file(config_path):
-    configs = None
-    with open(os.path.join(config_path), 'r') as fd:
-        try:
-            configs = yaml.load(fd)
-        except yaml.YAMLError as e:
-            log.critical("Unable to load conf file: " + str(e))
-            return False
-    return configs
