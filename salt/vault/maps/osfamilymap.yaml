@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-
+# vim: ft=yaml
+---
 RedHat:
   platform: linux_amd64
   gpg_pkg: gnupg2
@@ -13,6 +14,7 @@ RedHat:
       - openssl-devel
     pip_deps:
       - hvac
+      - future
       - testinfra
       - boto3
 
@@ -30,5 +32,6 @@ Debian:
     pip_deps:
       - pyopenssl
       - hvac
+      - future
       - testinfra
       - boto3

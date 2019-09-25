@@ -4,6 +4,7 @@ This module provides methods for interacting with Hashicorp Vault via the HVAC
 library.
 """
 from __future__ import absolute_import
+from builtins import super
 
 import logging
 import hashlib
@@ -73,7 +74,7 @@ def get_audit_device_manager():
     return VaultAuditManager()
 
 
-class VaultConfigBase:
+class VaultConfigBase(object):
     type = None
     path = None
     description = None
@@ -150,6 +151,7 @@ class VaultAuditDevice(VaultConfigBase):
 
     def __init__(self, type, path, description, config=None):
         super().__init__(type, path, description, config)
+
 
 class VaultPolicyManager():
     """
