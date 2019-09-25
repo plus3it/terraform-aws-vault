@@ -113,8 +113,10 @@ docs/generate: | guard/program/terraform-docs
 	cat $(README_PARTS) > $(README_FILE)
 	@ echo "[$@]: Documentation files creation complete!"
 
-terratest/install: | guard/program/go guard/program/dep
-	cd tests && dep ensure
+terratest/install: | guard/program/go
+	cd tests && go mod init terraform-aws-vault/tests
+	cd tests && go build ./...
+	cd tests && go mod tidy
 
-terratest/test: | guard/program/go guard/program/dep
+terratest/test: | guard/program/go
 	cd tests && go test -v -timeout 40m

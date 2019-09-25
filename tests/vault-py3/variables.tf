@@ -45,3 +45,26 @@ variable "watchmaker_config" {
   description = "(Optional) URL to a Watchmaker config file"
   default     = ""
 }
+
+variable "vault_version" {
+  description = "Version of Vault to be installed on servers"
+  type        = string
+}
+
+variable "dynamodb_table" {
+  description = "Name of the Dynamodb to be used as storage backend for Vault"
+  type        = string
+  default     = null
+}
+
+variable "certificate_arn" {
+  type        = string
+  description = "The ARN of the default SSL server certificate to be use for HTTPS lb listener."
+  default     = null
+}
+
+variable "ec2_extra_security_group_ids" {
+  type        = list(string)
+  description = "List of additional security groups to add to EC2 instances"
+  default     = []
+}

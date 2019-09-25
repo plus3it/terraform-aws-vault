@@ -29,6 +29,11 @@ variable "vault_version" {
   type        = string
 }
 
+variable "vault_pillar_path" {
+  type = string
+  description = "Specify the path to vault pillar"
+}
+
 variable "kms_key_id" {
   description = "Id of an AWS KMS key use for auto unseal operation when vault is intialize"
   type        = string

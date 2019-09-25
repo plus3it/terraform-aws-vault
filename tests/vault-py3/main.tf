@@ -21,14 +21,16 @@ module "vault-py3" {
   ec2_subnet_ids = var.ec2_subnet_ids
   lb_subnet_ids  = var.lb_subnet_ids
 
-  cloudwatch_agent_url = var.cloudwatch_agent_url
+  cloudwatch_agent_url         = var.cloudwatch_agent_url
+  ec2_extra_security_group_ids = var.ec2_extra_security_group_ids
 
   domain_name     = var.domain_name
   route53_zone_id = var.route53_zone_id
+  certificate_arn = var.certificate_arn
 
   # Vault settings
-  vault_version  = "1.2.0"
-  dynamodb_table = null
+  vault_version  = var.vault_version
+  dynamodb_table = var.dynamodb_table
 
   # Watchmaker settings
   watchmaker_config = var.watchmaker_config
