@@ -11,38 +11,42 @@ terraform {
 ###
 
 locals {
-  vpc_id                 = element(data.aws_subnet.lb.*.vpc_id, 0)
-  archive_file_name      = "salt.zip"
-  configs_file_name      = "configs.zip"
-  appscript_file_name    = "appscript.sh"
-  config_dir_path        = "/etc/vault/configs"
-  logs_path              = "/var/log/vault"
-  default_enabled_repos  = ["epel"]
-  default_inbound_cdirs  = ["10.0.0.0/16", "10.0.0.0/8"]
-  s3_bucket_name         = join("-", [var.name, random_string.this.result])
-  appscript_url          = join("/", [module.s3_bucket.id, local.appscript_file_name])
-  archive_dir_path       = join("/", [path.module, ".files"])
-  appscript_dir_path     = join("/", [path.module, "scripts"])
-  role_name              = join("-", [upper(var.name), "INSTANCE", data.aws_caller_identity.current.account_id])
-  ssm_root_path          = join("/", ["vault", var.environment, data.aws_caller_identity.current.account_id, var.name])
-  s3_salt_vault_content  = join("/", [module.s3_bucket.id, local.archive_file_name])
-  s3_vault_configuration = var.vault_configs_path == null ? "" : join("/", [module.s3_bucket.id, local.configs_file_name])
-  dynamodb_table         = var.dynamodb_table == null ? join("", aws_dynamodb_table.this.*.id) : var.dynamodb_table
-  kms_key_id             = var.kms_key_id == null ? join("", aws_kms_key.this.*.id) : var.kms_key_id
-  certificate_arn        = var.certificate_arn == null ? join("", aws_acm_certificate.this.*.id) : var.certificate_arn
-  vault_url              = var.vault_url == null ? join(".", [var.name, var.domain_name]) : var.vault_url
+  vpc_id                = data.aws_subnet.lb[0].vpc_id
+  bucket_name           = "${var.name}-${random_string.this.result}"
+  archive_file_name     = "salt.zip"
+  configs_file_name     = "configs.zip"
+  appscript_file_name   = "appscript.sh"
+  pillar_file_name      = "pillar.zip"
+  logs_dir              = "/var/log/vault"
+  logs_path             = "${local.logs_dir}/state.vault"
+  enabled_repos         = "epel"
+  default_inbound_cdirs = ["10.0.0.0/16"]
+  s3_appscript_url      = "s3://${module.s3_bucket.this_s3_bucket_id}/${local.appscript_file_name}"
+  s3_salt_vault_content = "s3://${module.s3_bucket.this_s3_bucket_id}/${local.archive_file_name}"
+  s3_pillar_url         = "s3://${module.s3_bucket.this_s3_bucket_id}/${local.pillar_file_name}"
+  archive_path          = join("/", [path.module, ".files", local.archive_file_name])
+  pillar_path           = join("/", [path.cwd, ".files", local.pillar_file_name])
+  appscript_path        = join("/", [path.module, "scripts", local.appscript_file_name])
+  ssm_root_path         = join("/", ["vault", var.environment, data.aws_caller_identity.current.account_id, var.name])
+  role_name             = join("-", [upper(var.name), "INSTANCE", data.aws_caller_identity.current.account_id])
+  dynamodb_table        = var.dynamodb_table == null ? aws_dynamodb_table.this[0].id : var.dynamodb_table
+  kms_key_id            = var.kms_key_id == null ? aws_kms_key.this[0].id : var.kms_key_id
+  certificate_arn       = var.certificate_arn == null ? aws_acm_certificate.this[0].id : var.certificate_arn
+  vault_url             = var.vault_url == null ? join(".", [var.name, var.domain_name]) : var.vault_url
 
   # Logs files to be streamed to CloudWatch Logs
   logs = [
-    join("/", [local.logs_path, "state.vault.log"]),
-    join("/", [local.logs_path, "state.vault.initialize.log"]),
-    join("/", [local.logs_path, "state.vault.sync.log"])
+    "${local.logs_path}.log",
+    "${local.logs_path}.initialize.log",
+    "${local.logs_path}.sync.log",
   ]
 
-  tags = merge(var.tags,
+  tags = merge(
     {
+      Name        = var.name,
       Environment = var.environment
-    }
+    },
+    var.tags
   )
 }
 
@@ -76,51 +80,49 @@ data "aws_subnet" "lb" {
   id = var.lb_subnet_ids[count.index]
 }
 
-data "archive_file" "salt" {
-  type        = "zip"
-  source_dir  = join("/", [path.module, "salt"])
-  output_path = join("/", [local.archive_dir_path, local.archive_file_name])
-}
-
-data "archive_file" "configs" {
-  count       = var.vault_configs_path == null ? 0 : 1
-  type        = "zip"
-  source_dir  = var.vault_configs_path
-  output_path = join("/", [local.archive_dir_path, local.configs_file_name])
-}
-
-data "template_file" "appscript" {
-  template = file(join("/", [local.appscript_dir_path, local.appscript_file_name]))
+# Manage vault pillar
+resource "template_dir" "pillar" {
+  source_dir      = var.vault_pillar_path
+  destination_dir = "${path.cwd}/.files/pillar"
 
   vars = {
-    salt_content_archive = local.s3_salt_vault_content
-
-    salt_grains_json = join("", ["'", jsonencode({
-      api_port       = var.api_port
-      cluster_port   = var.cluster_port
-      dynamodb_table = local.dynamodb_table
-      inbound_cidrs  = concat(var.inbound_cidrs, local.default_inbound_cdirs)
-      kms_key_id     = local.kms_key_id
-      logs_path      = local.logs_path
-      region         = data.aws_region.current.name
-      ssm_path       = local.ssm_root_path
-      version        = var.vault_version
-    }), "'"])
+    api_port       = var.api_port
+    cluster_port   = var.cluster_port
+    dynamodb_table = local.dynamodb_table
+    inbound_cidrs  = jsonencode(concat(var.inbound_cidrs, local.default_inbound_cdirs))
+    kms_key_id     = local.kms_key_id
+    logs_dir       = local.logs_dir
+    logs_path      = local.logs_path
+    region         = data.aws_region.current.name
+    ssm_path       = local.ssm_root_path
+    vault_version  = var.vault_version
   }
+}
+
+data "archive_file" "pillar" {
+  type        = "zip"
+  source_dir  = template_dir.pillar.destination_dir
+  output_path = local.pillar_path
+}
+
+resource "aws_s3_bucket_object" "pillar" {
+  bucket = module.s3_bucket.this_s3_bucket_id
+  key    = local.pillar_file_name
+  source = local.pillar_path
+  etag   = data.archive_file.pillar.output_md5
 }
 
 # Manage S3 bucket module
 module "s3_bucket" {
-  source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "0.0.1"
+  source = "git::https://github.com/terraform-aws-modules/terraform-aws-s3-bucket.git?ref=v0.1.0"
 
-  bucket = local.s3_bucket_name
+  bucket = local.bucket_name
 }
 
 
 resource "aws_s3_bucket_policy" "this" {
-  bucket = module.s3_bucket.id
-  policy = templatefile("${path.module}/policies/bucket_policy.json", { bucket_arn = module.s3_bucket.arn })
+  bucket = module.s3_bucket.this_s3_bucket_id
+  policy = templatefile("${path.module}/policies/bucket_policy.json", { bucket_arn = module.s3_bucket.this_s3_bucket_arn })
 }
 
 # Manage IAM module
@@ -129,7 +131,7 @@ module "iam" {
 
   role_name = local.role_name
   policy_vars = {
-    bucket_name    = module.s3_bucket.id
+    bucket_name    = module.s3_bucket.this_s3_bucket_id
     dynamodb_table = local.dynamodb_table
     kms_key_id     = local.kms_key_id
     stack_name     = var.name
@@ -144,24 +146,32 @@ resource "random_string" "this" {
   upper   = false
 }
 
-# Manage archive and appscript files
+# Manage archive, appscript, pillar files
+
+data "archive_file" "salt" {
+  type        = "zip"
+  source_dir  = "${path.module}/salt"
+  output_path = local.archive_path
+}
+
 resource "aws_s3_bucket_object" "salt_zip" {
-  bucket = module.s3_bucket.id
+  bucket = module.s3_bucket.this_s3_bucket_id
   key    = local.archive_file_name
-  source = join("/", [local.archive_dir_path, local.archive_file_name])
+  source = local.archive_path
   etag   = data.archive_file.salt.output_md5
 }
 
-resource "aws_s3_bucket_object" "configs_zip" {
-  count  = var.vault_configs_path == null ? 0 : 1
-  bucket = module.s3_bucket.id
-  key    = local.configs_file_name
-  source = join("/", [local.archive_dir_path, local.configs_file_name])
-  etag   = data.archive_file.configs[count.index].output_md5
+data "template_file" "appscript" {
+  template = file(local.appscript_path)
+
+  vars = {
+    salt_content_archive = local.s3_salt_vault_content
+    pillar_archive       = local.s3_pillar_url
+  }
 }
 
 resource "aws_s3_bucket_object" "app_script" {
-  bucket  = module.s3_bucket.id
+  bucket  = module.s3_bucket.this_s3_bucket_id
   key     = local.appscript_file_name
   content = data.template_file.appscript.rendered
   etag    = md5(data.template_file.appscript.rendered)
@@ -171,14 +181,14 @@ resource "aws_s3_bucket_object" "app_script" {
 resource "aws_kms_alias" "this" {
   count         = var.kms_key_id == null ? 1 : 0
   name          = "alias/${var.name}"
-  target_key_id = join("", aws_kms_key.this.*.key_id)
+  target_key_id = aws_kms_key.this[0].key_id
 }
 
 resource "aws_kms_key" "this" {
   count       = var.kms_key_id == null ? 1 : 0
   description = "KMS Key for ${var.name}"
 
-  tags = merge({ Name = var.name }, local.tags)
+  tags = local.tags
 }
 
 # Manage domain record
@@ -201,7 +211,7 @@ resource "aws_acm_certificate" "this" {
   domain_name       = local.vault_url
   validation_method = "DNS"
 
-  tags = merge({ Name = var.name }, local.tags)
+  tags = local.tags
 
   lifecycle {
     create_before_destroy = true
@@ -211,18 +221,18 @@ resource "aws_acm_certificate" "this" {
 resource "aws_route53_record" "cert_validation" {
   count = var.certificate_arn == null ? 1 : 0
 
-  name    = join("", aws_acm_certificate.this.*.domain_validation_options.0.resource_record_name)
-  type    = join("", aws_acm_certificate.this.*.domain_validation_options.0.resource_record_type)
+  name    = aws_acm_certificate.this[0].domain_validation_options[0].resource_record_name
+  type    = aws_acm_certificate.this[0].domain_validation_options[0].resource_record_type
   zone_id = var.route53_zone_id
-  records = ["${join("", aws_acm_certificate.this.*.domain_validation_options.0.resource_record_value)}"]
+  records = aws_acm_certificate.this[*].domain_validation_options[0].resource_record_value
   ttl     = 60
 }
 
 resource "aws_acm_certificate_validation" "this" {
   count = var.certificate_arn == null ? 1 : 0
 
-  certificate_arn         = join("", aws_acm_certificate.this.*.arn)
-  validation_record_fqdns = ["${join("", aws_route53_record.cert_validation.*.fqdn)}"]
+  certificate_arn         = aws_acm_certificate.this[0].arn
+  validation_record_fqdns = aws_route53_record.cert_validation[*].fqdn
 }
 
 # Manage load balancer
@@ -232,7 +242,7 @@ resource "aws_lb" "this" {
   security_groups = [aws_security_group.lb.id]
   subnets         = var.lb_subnet_ids
 
-  tags = merge({ Name = var.name }, local.tags)
+  tags = local.tags
 }
 
 resource "aws_lb_listener" "http" {
@@ -287,7 +297,7 @@ resource "aws_lb_target_group" "this" {
     unhealthy_threshold = "2"
   }
 
-  tags = merge({ Name = var.name }, local.tags)
+  tags = local.tags
 }
 
 # Manage security groups
@@ -371,7 +381,7 @@ resource "aws_dynamodb_table" "this" {
     type = "S"
   }
 
-  tags = merge({ Name = var.name }, local.tags)
+  tags = local.tags
 }
 
 resource "aws_appautoscaling_target" "this" {
@@ -387,11 +397,11 @@ resource "aws_appautoscaling_target" "this" {
 resource "aws_appautoscaling_policy" "this" {
   count = var.dynamodb_table == null ? 1 : 0
 
-  name               = join(":", ["DynamoDBReadCapacityUtilization", join("", aws_appautoscaling_target.this.*.resource_id)])
+  name               = join(":", ["DynamoDBReadCapacityUtilization", aws_appautoscaling_target.this[0].resource_id])
   policy_type        = "TargetTrackingScaling"
-  resource_id        = join("", aws_appautoscaling_target.this.*.resource_id)
-  scalable_dimension = join("", aws_appautoscaling_target.this.*.scalable_dimension)
-  service_namespace  = join("", aws_appautoscaling_target.this.*.service_namespace)
+  resource_id        = aws_appautoscaling_target.this[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.this[0].scalable_dimension
+  service_namespace  = aws_appautoscaling_target.this[0].service_namespace
 
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification {
@@ -412,7 +422,7 @@ module "autoscaling_group" {
 
   AmiId                = data.aws_ami.this.id
   AmiDistro            = "CentOS"
-  AppScriptUrl         = join("", ["s3://", local.appscript_url])
+  AppScriptUrl         = local.s3_appscript_url
   CfnBootstrapUtilsUrl = var.cfn_bootstrap_utils_url
 
   CfnEndpointUrl     = var.cfn_endpoint_url
@@ -440,6 +450,5 @@ module "autoscaling_group" {
   MinCapacity     = var.min_capacity
   MaxCapacity     = var.max_capacity
 
-  EnableRepos = join(" ", concat(var.enabled_repos, local.default_enabled_repos))
-
+  EnableRepos = local.enabled_repos
 }

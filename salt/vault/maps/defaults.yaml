@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
-
+# vim: ft=yaml
+---
 vault:
-  version: 1.1.3
+  version: 1.2.0
   repo_base_url: "https://releases.hashicorp.com/vault"
   dev_mode: False
   dev_configs: ""
@@ -15,7 +15,7 @@ vault:
   max_lease_ttl: 192h #one week
   recovery_shares: 5
   recovery_threshold: 3
-  config_dir_path: /srv/salt/vault/configs
   region: ""
   dynamodb_table: ""
   kms_key_id: ""
+  ssm_path: ""

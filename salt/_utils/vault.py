@@ -9,7 +9,6 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 
 
 def build_client(url=None, token=None):
-
     vault_url = url if url != None else get_vault_url()
     client = hvac.Client(
         url=vault_url,
@@ -23,11 +22,18 @@ def build_client(url=None, token=None):
 
 
 def get_vault_url():
-    '''
-    Returns a string consist of url and port number
-    '''
-    port = __grains__['vault']['api_port'] if __grains__[
-        'vault']['api_port'] != None else 8200
-    url = "http://localhost"
+    """Construct Vault server's URL
 
-    return "{}:{}".format(url, port)
+    Returns:
+        string -- URL of the the vault server
+    """
+
+    # default port for vault server is 8200
+    port = 8200
+
+    try:
+      port = __pillar__['vault']['lookup']['api_port']
+    except Exception:
+      pass
+
+    return "http://localhost:{}".format(port)

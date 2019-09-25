@@ -26,20 +26,19 @@ def __virtual__():
 
 
 def initialized(name, ssm_path, recovery_shares=5, recovery_threshold=3):
-    """
-    Ensure that the vault instance has been initialized and run the
-    initialization if it has not. Storing the root token to SSM parameter
+    """Ensure that the vault instance has been initialized and run the
+    initialization if it has not. Storing the root token to SSM parameter store.
 
     Arguments:
-            name {string} -- The id used for the state definition
-            ssm_path {string} -- The path to SSM parameter that will store the root token
+        name {string} -- The id used for the state definition
+        ssm_path {string} -- The path to SSM parameter that will store the root token
 
     Keyword Arguments:
-            recovery_shares {int} -- Specifies the number of shares to split the recovery key into. (default: {5})
-            recovery_threshold {int} -- Specifies the number of shares required to reconstruct the recovery key. This must be less than or equal to recovery_shares. (default: {3})
+        recovery_shares {int} -- Specifies the number of shares to split the recovery key into. (default: {5})
+        recovery_threshold {int} -- Specifies the number of shares required to reconstruct the recovery key. This must be less than or equal to recovery_shares. (default: {3})
 
     Returns:
-            ret {dict} --  Result of the execution
+        ret {dict} --  Result of the execution
     """
     ret = {'name': name,
           'comment': '',
@@ -98,17 +97,16 @@ def initialized(name, ssm_path, recovery_shares=5, recovery_threshold=3):
 
 
 def secret_engines_synced(name, configs=[]):
-    """
-    Ensure secrets engines are synced with Vault
+    """Ensure secrets engines are synced with Vault
 
     Arguments:
-            name {string} -- The id used for the state definition
+        name {string} -- The id used for the state definition
 
     Keyword Arguments:
-            configs {list} -- A list of configuration rules that defined the secrets engines (default: [])
+        configs {list} -- A list of configuration rules that defined the secrets engines (default: [])
 
     Returns:
-            ret {dict} --  Result of the execution
+        ret {dict} --  Result of the execution
     """
 
     client = __utils__['vault.build_client']()
@@ -159,12 +157,12 @@ def auth_methods_synced(name, configs=[]):
     Ensure authentication methods are synced with Vault
 
     Arguments:
-            name {string} -- The id used for the state definition
+        name {string} -- The id used for the state definition
 
     Keyword Arguments:
-            configs {list} -- A list of configuration rules that defined the authentication methods (default: [])
+        configs {list} -- A list of configuration rules that defined the authentication methods (default: [])
     Returns:
-            ret {dict} --  Result of the execution
+        ret {dict} --  Result of the execution
     """
 
     client = __utils__['vault.build_client']()
@@ -208,16 +206,15 @@ def auth_methods_synced(name, configs=[]):
 
 
 def policies_synced(name, policies=[]):
-    """
-    Ensure policies are synced with Vault
+    """Ensure policies are synced with Vault
 
     Arguments:
-            name {string} -- The id used for the state definition
+        name {string} -- The id used for the state definition
 
     Keyword Arguments:
-            policies {list} -- A list of policies to by synced with Vault (default: [])
+        policies {list} -- A list of policies to by synced with Vault (default: [])
     Returns:
-            ret {dict} --  Result of the execution
+        ret {dict} --  Result of the execution
     """
 
     client = __utils__['vault.build_client']()
@@ -234,7 +231,7 @@ def policies_synced(name, policies=[]):
 
     try:
         remote_policies = policiesManager.get_remote_policies(client, ret)
-        local_policies = json.loads(json.dumps(policies))
+        local_policies = policies
         policiesManager.push_policies(
             client, remote_policies, local_policies, ret)
         policiesManager.cleanup_policies(
@@ -248,16 +245,15 @@ def policies_synced(name, policies=[]):
 
 
 def audit_devices_synced(name, configs=[]):
-    """
-    Ensures audit devices are synced with Vault
+    """Ensure audit devices are synced with Vault
 
     Arguments:
-            name {string} -- The id used for the state definition
+        name {string} -- The id used for the state definition
 
     Keyword Arguments:
-            configs {list} -- A list of configuration rules that defined the audit devices (default: [])
+        configs {list} -- A list of configuration rules that defined the audit devices (default: [])
     Returns:
-            ret {dict} --  Result of the execution
+        ret {dict} --  Result of the execution
     """
 
     client = __utils__['vault.build_client']()

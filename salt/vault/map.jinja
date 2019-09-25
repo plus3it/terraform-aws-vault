@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# vim: ft=sls syntax=yaml softtabstop=2 tabstop=2 shiftwidth=2 expandtab autoindent
 
 {% import_yaml "vault/maps/defaults.yaml" or {} as defaults %}
 {% import_yaml "vault/maps/osfamilymap.yaml" or {} as osfamilymap %}
@@ -8,7 +9,10 @@
     default='vault',
     merge=salt.grains.filter_by(osfamilymap, grain='os_family',
       merge=salt.grains.filter_by(initfamilymap, grain='init',
-        merge=salt.grains.get('vault', default={})
+        merge=salt.pillar.get('vault:lookup', default={})
       )
     )
 ) %}
+
+{#- Merge the vault pillar #}
+{%- set vault = salt.pillar.get('vault', default=vault, merge=True) %}

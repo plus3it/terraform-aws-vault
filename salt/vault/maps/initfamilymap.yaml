@@ -1,4 +1,6 @@
-# -*- coding: utf-8 -*-]
+# -*- coding: utf-8 -*-
+# vim: ft=yaml
+---
 systemd:
   service:
     path: /etc/systemd/system/vault.service

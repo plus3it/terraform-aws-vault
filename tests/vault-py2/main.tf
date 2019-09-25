@@ -34,7 +34,7 @@ module "base" {
   # Watchmaker settings
   watchmaker_config = var.watchmaker_config
 
-  toggle_update = "B"
+  toggle_update = "A"
 }
 
 output "cluster_url" {

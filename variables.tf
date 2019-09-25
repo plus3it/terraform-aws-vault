@@ -44,6 +44,11 @@ variable "vault_version" {
   description = "Version of Vault to be installed on servers"
 }
 
+variable "vault_pillar_path" {
+  type        = string
+  description = "Specify the path to vault pillar"
+}
+
 variable "vault_url" {
   type        = string
   description = "The DNS address that vault will be accessible at. Stack name will be used as the url when value is set to empty. Example: vault.domain.net"
@@ -86,12 +91,6 @@ variable "ami_name_regex" {
   type        = string
   description = "Regex to help fine-grain filtering AMI"
   default     = "spel-minimal-centos-7-hvm-\\d{4}\\.\\d{2}\\.\\d{1}\\.x86_64-gp2"
-}
-
-variable "vault_configs_path" {
-  type        = string
-  description = "(Optional) Path to directory that contains configuration files for vault"
-  default     = null
 }
 
 variable "instance_type" {
