@@ -5,8 +5,9 @@
 # configures the configuration version (we support older styles for
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
-BOX_IMAGE = "centos/7"
-NODE_COUNT = 1
+
+BOX_IMAGE = "plus3it/spel-minimal-centos-7"
+NODE_COUNT = 2
 
 Vagrant.configure("2") do |config|
   # The most common configuration options are documented and commented below.
@@ -80,12 +81,16 @@ Vagrant.configure("2") do |config|
     yum update -y && yum upgrade -y
     yum install -y curl unzip epel-release yum-utils jq
 
-    yum install -y https://repo.saltstack.com/py3/redhat/salt-py3-repo-2018.3.el7.noarch.rpm
+    # Python3
+    # yum install -y https://repo.saltstack.com/py3/redhat/salt-py3-repo-2018.3.el7.noarch.rpm
 
-    yum clean expire-cache
+    # Python2
+    # yum install -y https://repo.saltstack.com/yum/redhat/salt-repo-2018.3.el7.noarch.rpm
 
-    yum install salt-master -y
-    yum install salt-minion -y
+    # yum clean expire-cache
+
+    # yum install salt-master -y
+    # yum install salt-minion -y
 
     echo 'Change permission for dirs'
     chmod +x /usr/local/bin/
@@ -103,17 +108,15 @@ Vagrant.configure("2") do |config|
       echo 'export VAULT_TOKEN=root' >> /home/vagrant/.bash_profile
       echo 'alias l="ls -lah"' >> /home/vagrant/.bash_profile
     fi
-
-
   SHELL
 
-  config.vm.provision "shell", inline: <<-SHELL
+  # config.vm.provision "shell", inline: <<-SHELL
 
-    echo "Setting the required salt grains for vault..."
-    salt-call --local grains.setval vault '{"dev_mode": true, "dev_configs": "-dev -dev-root-token-id=root", "api_port": 8200, "cluster_port": 8201}'
+  #   echo "Setting the required salt grains for vault..."
+  #   salt-call --local grains.setval vault '{"dev_mode": true, "dev_configs": "-dev -dev-root-token-id=root", "api_port": 8200, "cluster_port": 8201}'
 
-    echo "Updating salt states/modules/utils/grains..."
-    salt-call --local saltutil.sync_all
-  SHELL
+  #   echo "Updating salt states/modules/utils/grains..."
+  #   salt-call --local saltutil.sync_all
+  # SHELL
 
 end

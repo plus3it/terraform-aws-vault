@@ -68,7 +68,7 @@ install_python_dependencies:
 {%- if salt.grains.get('pythonversion')[0] | int == 3 %}
 install_pip_module:
   pkg.installed:
-    - name: python36-pip
+    - name: python3-pip
 
 install_python_dependencies:
   pip.installed:

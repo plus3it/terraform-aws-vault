@@ -11,7 +11,9 @@ vault_configure_service_file:
     - name: /etc/vault/conf.d/server.hcl
     - template: jinja
     - defaults:
+{%- if not vault.dev_mode %}
         ip_address: {{ grains.ip_interfaces.eth0.0 }}
+{%- endif %}
         api_port: {{ vault.api_port }}
         cluster_port: {{ vault.cluster_port }}
         region: {{ vault.region }}
