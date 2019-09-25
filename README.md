@@ -40,7 +40,7 @@ Terraform module that installs and configures Hashicorp Vault cluster with HA Dy
 | route53\_zone\_id | Hosted zone ID Route 53 hosted zone | string | n/a | yes |
 | tags | (Optional) list of tags to include with resource | map(string) | `<map>` | no |
 | toggle\_update | (Optional) Toggle that triggers a stack update by modifying the launch config, resulting in new instances; must be one of: A or B | string | `"A"` | no |
-| vault\_configs\_path | (Optional) Path to directory that contains configuration files for vault | string | `"null"` | no |
+| vault\_pillar\_path | Specify the path to vault pillar | string | n/a | yes |
 | vault\_url | The DNS address that vault will be accessible at. Stack name will be used as the url when value is set to empty. Example: vault.domain.net | string | `"null"` | no |
 | vault\_version | Version of Vault to be installed on servers | string | n/a | yes |
 | watchmaker\_admin\_groups | (Optional) Colon-separated list of domain groups that should have admin permissions on the EC2 instance | string | `""` | no |

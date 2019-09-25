@@ -17,6 +17,8 @@
 # ignore go files
 vendor/
 .configs/
+go.mod
+go.sum
 
 
 #Vagrant related files
