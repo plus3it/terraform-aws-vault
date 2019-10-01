@@ -30,7 +30,7 @@ variable "vault_version" {
 }
 
 variable "vault_pillar_path" {
-  type = string
+  type        = string
   description = "Specify the path to vault pillar"
 }
 

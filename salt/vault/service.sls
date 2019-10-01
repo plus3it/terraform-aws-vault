@@ -8,26 +8,16 @@ vault_service_init_file_managed:
     - defaults:
         dev_configs: {{ vault.dev_configs }}
 
-{%- if not vault.dev_mode %}
+vault_service_running:
+  service.running:
+    - name: vault
+    - enable: True
+    - reload: True
 
+{%- if not vault.dev_mode %}
 manage_selinux_mode:
   selinux.mode:
     - name: permissive
-
-vault_service_running:
-  service.running:
-    - name: vault
-    - enable: True
-    - reload: True
-    - require:
-      - selinux: manage_selinux_mode
-
-{%- else %}
-
-vault_service_running:
-  service.running:
-    - name: vault
-    - enable: True
-    - reload: True
-
+    - require_in:
+      - service: vault_service_running
 {%- endif %}

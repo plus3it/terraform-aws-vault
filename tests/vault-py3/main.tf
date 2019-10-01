@@ -29,8 +29,9 @@ module "vault-py3" {
   certificate_arn = var.certificate_arn
 
   # Vault settings
-  vault_version  = var.vault_version
-  dynamodb_table = var.dynamodb_table
+  vault_version     = var.vault_version
+  vault_pillar_path = var.vault_pillar_path
+  dynamodb_table    = var.dynamodb_table
 
   # Watchmaker settings
   watchmaker_config = var.watchmaker_config

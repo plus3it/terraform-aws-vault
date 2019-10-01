@@ -51,6 +51,11 @@ variable "vault_version" {
   type        = string
 }
 
+variable "vault_pillar_path" {
+  type        = string
+  description = "Specify the path to vault pillar"
+}
+
 variable "dynamodb_table" {
   description = "Name of the Dynamodb to be used as storage backend for Vault"
   type        = string

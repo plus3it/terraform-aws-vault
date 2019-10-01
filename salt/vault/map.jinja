@@ -13,6 +13,3 @@
       )
     )
 ) %}
-
-{#- Merge the vault pillar #}
-{%- set vault = salt.pillar.get('vault', default=vault, merge=True) %}

@@ -21,9 +21,9 @@ locals {
   logs_path             = "${local.logs_dir}/state.vault"
   enabled_repos         = "epel"
   default_inbound_cdirs = ["10.0.0.0/16"]
-  s3_appscript_url      = "s3://${module.s3_bucket.this_s3_bucket_id}/${local.appscript_file_name}"
-  s3_salt_vault_content = "s3://${module.s3_bucket.this_s3_bucket_id}/${local.archive_file_name}"
-  s3_pillar_url         = "s3://${module.s3_bucket.this_s3_bucket_id}/${local.pillar_file_name}"
+  s3_appscript_url      = "s3://${aws_s3_bucket.this.id}/${local.appscript_file_name}"
+  s3_salt_vault_content = "s3://${aws_s3_bucket.this.id}/${local.archive_file_name}"
+  s3_pillar_url         = "s3://${aws_s3_bucket.this.id}/${local.pillar_file_name}"
   archive_path          = join("/", [path.module, ".files", local.archive_file_name])
   pillar_path           = join("/", [path.cwd, ".files", local.pillar_file_name])
   appscript_path        = join("/", [path.module, "scripts", local.appscript_file_name])
@@ -106,23 +106,22 @@ data "archive_file" "pillar" {
 }
 
 resource "aws_s3_bucket_object" "pillar" {
-  bucket = module.s3_bucket.this_s3_bucket_id
+  bucket = aws_s3_bucket.this.id
   key    = local.pillar_file_name
   source = local.pillar_path
   etag   = data.archive_file.pillar.output_md5
 }
 
-# Manage S3 bucket module
-module "s3_bucket" {
-  source = "git::https://github.com/terraform-aws-modules/terraform-aws-s3-bucket.git?ref=v0.1.0"
-
+# Manage S3 bucket
+resource "aws_s3_bucket" "this" {
   bucket = local.bucket_name
+
+  tags = local.tags
 }
 
-
 resource "aws_s3_bucket_policy" "this" {
-  bucket = module.s3_bucket.this_s3_bucket_id
-  policy = templatefile("${path.module}/policies/bucket_policy.json", { bucket_arn = module.s3_bucket.this_s3_bucket_arn })
+  bucket = aws_s3_bucket.this.id
+  policy = templatefile("${path.module}/policies/bucket_policy.json", { bucket_arn = aws_s3_bucket.this.arn })
 }
 
 # Manage IAM module
@@ -131,7 +130,7 @@ module "iam" {
 
   role_name = local.role_name
   policy_vars = {
-    bucket_name    = module.s3_bucket.this_s3_bucket_id
+    bucket_name    = aws_s3_bucket.this.id
     dynamodb_table = local.dynamodb_table
     kms_key_id     = local.kms_key_id
     stack_name     = var.name
@@ -155,7 +154,7 @@ data "archive_file" "salt" {
 }
 
 resource "aws_s3_bucket_object" "salt_zip" {
-  bucket = module.s3_bucket.this_s3_bucket_id
+  bucket = aws_s3_bucket.this.id
   key    = local.archive_file_name
   source = local.archive_path
   etag   = data.archive_file.salt.output_md5
@@ -171,7 +170,7 @@ data "template_file" "appscript" {
 }
 
 resource "aws_s3_bucket_object" "app_script" {
-  bucket  = module.s3_bucket.this_s3_bucket_id
+  bucket  = aws_s3_bucket.this.id
   key     = local.appscript_file_name
   content = data.template_file.appscript.rendered
   etag    = md5(data.template_file.appscript.rendered)
@@ -285,7 +284,7 @@ resource "aws_lb_target_group" "this" {
   # /sys/health will return 200 only if the vault instance
   # is the leader. Meaning there will only ever be one healthy
   # instance, but a failure will cause a new instance to
-  # be healthy automatically. This healthceck path prevents
+  # be healthy automatically. This healthcheck path prevents
   # unnecessary redirect loops by not sending traffic to
   # followers, which always just route traffic to the master
   health_check {
@@ -414,16 +413,15 @@ resource "aws_appautoscaling_policy" "this" {
 
 # Manage autoscaling group
 module "autoscaling_group" {
-  source = "git::https://github.com/plus3it/terraform-aws-watchmaker//modules/lx-autoscale?ref=1.15.7"
+  source = "git::https://github.com/plus3it/terraform-aws-watchmaker//modules/lx-autoscale?ref=2.0.0"
 
   Name            = var.name
   OnFailureAction = ""
   DisableRollback = "true"
 
-  AmiId                = data.aws_ami.this.id
-  AmiDistro            = "CentOS"
-  AppScriptUrl         = local.s3_appscript_url
-  CfnBootstrapUtilsUrl = var.cfn_bootstrap_utils_url
+  AmiId        = data.aws_ami.this.id
+  AmiDistro    = "CentOS"
+  AppScriptUrl = local.s3_appscript_url
 
   CfnEndpointUrl     = var.cfn_endpoint_url
   CloudWatchAgentUrl = var.cloudwatch_agent_url
