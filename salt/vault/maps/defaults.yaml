@@ -1,0 +1,21 @@
+# vim: ft=yaml
+---
+vault:
+  version: 1.2.0
+  repo_base_url: "https://releases.hashicorp.com/vault"
+  dev_mode: False
+  dev_configs: ""
+  api_port: 8200
+  cluster_port: 8201
+  listener_address: "0.0.0.0"
+  inbound_cidrs:
+    - "10.0.0.0/16"
+  listener_tls_disable: 1
+  default_lease_ttl: 192h #one week
+  max_lease_ttl: 192h #one week
+  recovery_shares: 5
+  recovery_threshold: 3
+  region: ""
+  dynamodb_table: ""
+  kms_key_id: ""
+  ssm_path: ""

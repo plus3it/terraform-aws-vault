@@ -1,0 +1,24 @@
+api_addr = "http://{{ ip_address }}:{{ api_port }}"
+cluster_addr = "http://{{ ip_address }}:{{ cluster_port }}"
+
+backend "dynamodb" {
+    region = "{{ region }}"
+    table = "{{ dynamodb_table }}"
+    ha_enabled = "true"
+}
+
+seal "awskms" {
+    region = "{{ region }}"
+    kms_key_id = "{{ kms_key_id }}"
+}
+
+listener "tcp" {
+    address = "{{ listener_address }}:{{ api_port }}"
+    cluster_address = "{{ listener_address }}:{{ cluster_port }}"
+    tls_disable = {{ listener_tls_disable }}
+}
+
+default_lease_ttl = "{{ default_lease_ttl }}"
+max_lease_ttl = "{{ max_lease_ttl }}"
+
+ui = true

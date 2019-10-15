@@ -7,3 +7,19 @@
 
 # .tfvars files
 *.tfvars
+
+# temp archive files
+.files/
+
+# other uncessarry files
+.DS_Store
+
+# ignore go files
+vendor/
+.configs/
+go.mod
+go.sum
+
+
+#Vagrant related files
+.vagrant/

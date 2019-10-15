@@ -1,0 +1,97 @@
+{
+    "Statement": [
+        {
+            "Action": [
+                "cloudformation:DescribeStackResource",
+                "cloudformation:SignalResource"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:${partition}:cloudformation:${region}:${account_id}:stack/${stack_name}/*"
+            ],
+            "Sid": "CfnActions"
+        },
+        {
+            "Action": [
+                "s3:GetObject"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:${partition}:s3:::${bucket_name}/*",
+                "arn:${partition}:s3:::amazoncloudwatch-agent/*"
+            ],
+            "Sid": "S3ObjectActions"
+        },
+        {
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:${partition}:s3:::${bucket_name}"
+            ],
+            "Sid": "S3BucketActions"
+        },
+        {
+            "Action": [
+                "ssm:PutParameter",
+                "ssm:GetParameter"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:${partition}:ssm:${region}:${account_id}:parameter/${ssm_path}/*"
+            ],
+            "Sid": "SSMParameterActions"
+        },
+        {
+            "Action": [
+                "kms:DescribeKey",
+                "kms:Encrypt",
+                "kms:Decrypt"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:aws:kms:${region}:${account_id}:key/${kms_key_id}"
+            ],
+            "Sid": "KMSDescribeKey"
+        },
+        {
+            "Action": [
+                "logs:CreateLogStream",
+                "logs:DescribeLogStreams",
+                "logs:PutLogEvents"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:${partition}:logs:${region}:${account_id}:log-group:/aws/ec2/lx/${stack_name}:log-stream:*"
+            ],
+            "Sid": "CloudWatchLogStreamActions"
+        },
+        {
+            "Action": [
+                "dynamodb:DescribeLimits",
+                "dynamodb:DescribeTimeToLive",
+                "dynamodb:ListTagsOfResource",
+                "dynamodb:DescribeReservedCapacityOfferings",
+                "dynamodb:DescribeReservedCapacity",
+                "dynamodb:ListTables",
+                "dynamodb:BatchGetItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:CreateTable",
+                "dynamodb:DeleteItem",
+                "dynamodb:GetItem",
+                "dynamodb:GetRecords",
+                "dynamodb:PutItem",
+                "dynamodb:Query",
+                "dynamodb:UpdateItem",
+                "dynamodb:Scan",
+                "dynamodb:DescribeTable"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:${partition}:dynamodb:${region}:${account_id}:table/${dynamodb_table}"
+            ]
+        }
+    ],
+    "Version": "2012-10-17"
+}

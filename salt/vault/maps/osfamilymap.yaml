@@ -1,0 +1,37 @@
+# -*- coding: utf-8 -*-
+# vim: ft=yaml
+---
+RedHat:
+  platform: linux_amd64
+  gpg_pkg: gnupg2
+  module_dependencies:
+    pkgs:
+      - gcc
+      - python
+      - curl
+      - libffi-devel
+      - python-devel
+      - openssl-devel
+    pip_deps:
+      - hvac
+      - future
+      - testinfra
+      - boto3
+
+Debian:
+  gpg_pkg: gnupg2
+  platform: linux_amd64
+  module_dependencies:
+    pkgs:
+      - gcc
+      - python
+      - curl
+      - libffi-dev
+      - python-dev
+      - libssl-dev
+    pip_deps:
+      - pyopenssl
+      - hvac
+      - future
+      - testinfra
+      - boto3
