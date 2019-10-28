@@ -353,6 +353,9 @@ class VaultAuthManager():
             # Provision config for specific auth method
             if auth_method.auth_config:
                 if auth_method.type == "ldap":
+                    ldap_configuration = client.auth.ldap.read_configuration()
+                    log.debug('The LDAP auth method is configured with a LDAP server URL of: {url}'.format(
+                        url=ldap_configuration['data']['url']))
                     log.debug('Provisioning configuration for LDAP...')
                     client.auth.ldap.configure(**auth_method.auth_config)
                     log.debug('Configuration for LDAP is provisioned.')
@@ -363,12 +366,15 @@ class VaultAuthManager():
             if auth_method.extra_config:
                 log.debug(
                     'Provisioning extra configurations for auth method "%s"', auth_method.type)
-                # Get LDAP group mapping from vault
-                ldap_list_group_response = client.auth.ldap.list_groups()
-                if ldap_list_group_response:
-                    ldap_groups = ldap_list_group_response["data"]["keys"]
 
-                log.debug("LDAP groups from vault: %s", str(ldap_groups))
+                # Get LDAP group mapping from vault
+                try:
+                    ldap_groups = client.auth.ldap.list_groups()
+                    log.debug('The following groups are configured in the LDAP auth method: {groups}'.format(
+                        groups=','.join(ldap_groups['data']['keys'])
+                    ))
+                except hvac.exceptions.InvalidPath:
+                    pass
 
                 # Update LDAP group mapping
                 log.debug(

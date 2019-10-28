@@ -7,7 +7,7 @@
 # you're doing.
 
 BOX_IMAGE = "plus3it/spel-minimal-centos-7"
-NODE_COUNT = 2
+NODE_COUNT = 1
 
 Vagrant.configure("2") do |config|
   # The most common configuration options are documented and commented below.
@@ -48,7 +48,8 @@ Vagrant.configure("2") do |config|
   # the path on the guest to mount the folder. And the optional third
   # argument is a set of non-required options.
   config.vm.synced_folder '.', '/vagrant', disabled: true
-  config.vm.synced_folder "./salt", "/srv/salt"
+  config.vm.synced_folder './salt', '/srv/salt'
+  config.vm.synced_folder './.pillar/dev', '/srv/pillar'
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
   # Example for VirtualBox:
@@ -78,19 +79,19 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "shell", inline: <<-SHELL
     cd /root/
-    yum update -y && yum upgrade -y
-    yum install -y curl unzip epel-release yum-utils jq
+    # yum update -y && yum upgrade -y
+    # yum install -y curl unzip epel-release yum-utils jq
 
-    # Python3
+    ## Python3
     # yum install -y https://repo.saltstack.com/py3/redhat/salt-py3-repo-2018.3.el7.noarch.rpm
 
     # Python2
-    # yum install -y https://repo.saltstack.com/yum/redhat/salt-repo-2018.3.el7.noarch.rpm
+    yum install -y https://repo.saltstack.com/yum/redhat/salt-repo-2018.3.el7.noarch.rpm
 
-    # yum clean expire-cache
+    yum clean expire-cache
 
-    # yum install salt-master -y
-    # yum install salt-minion -y
+    yum install salt-master -y
+    yum install salt-minion -y
 
     echo 'Change permission for dirs'
     chmod +x /usr/local/bin/
@@ -110,13 +111,13 @@ Vagrant.configure("2") do |config|
     fi
   SHELL
 
-  # config.vm.provision "shell", inline: <<-SHELL
+  config.vm.provision "shell", inline: <<-SHELL
 
-  #   echo "Setting the required salt grains for vault..."
-  #   salt-call --local grains.setval vault '{"dev_mode": true, "dev_configs": "-dev -dev-root-token-id=root", "api_port": 8200, "cluster_port": 8201}'
+    # echo "Setting the required salt grains for vault..."
+    # salt-call --local grains.setval vault '{"dev_mode": true, "dev_configs": "-dev -dev-root-token-id=root", "api_port": 8200, "cluster_port": 8201}'
 
-  #   echo "Updating salt states/modules/utils/grains..."
-  #   salt-call --local saltutil.sync_all
-  # SHELL
+    echo "Updating salt states/modules/utils/grains..."
+    salt-call --local saltutil.sync_all
+  SHELL
 
 end

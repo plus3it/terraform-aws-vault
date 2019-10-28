@@ -35,14 +35,27 @@ vault:
           file_path: /etc/vault/logs/audit.log
 
     policies:
-      - name: xyz_admin
+      # Following example of vault policy from https://learn.hashicorp.com/vault/identity-access-management/iam-policies
+      - name: admin
         content:
           path:
-            '*': {capabilities: [read, create]}
-            'stage/*': {capabilities: [read, create, update, delete, list]}
-
-      - name: abc_admin
-        content:
-          path:
-            '*': {capabilities: [read, create]}
-            'stage/*': {capabilities: [read, create]}
+            # Manage ad secret engines broadly across Vault
+            'ad/*': {capabilities: [create, read, update, delete, list, sudo]}
+            # Manage auth methods broadly across Vault
+            'auth/*': {capabilities: [create, read, update, delete, list, sudo]}
+            # List, create, update, and delete key/value secrets
+            'secret/*':  {capabilities: [create, read, update, delete, list, sudo]}
+            # Manage secret engines
+            'secret/mounts/*':  {capabilities: [create, read, update, delete, list, sudo]}
+            # Create, update, and delete auth methods
+            'sys/auth/*':  {capabilities: [create, update, delete, sudo]}
+            # List auth methods
+            'sys/auth':  {capabilities: [read]}
+            # List existing policies
+            'sys/policies/acl':  {capabilities: [list]}
+            # Create and manage ACL policies
+            'sys/policies/acl/*':  {capabilities: [create, read, update, delete, list, sudo]}
+            # List existing secret engines.
+            'sys/mounts':  {capabilities: [read]}
+            # Read health check
+            'sys/health':  {capabilities: [read, sudo]}

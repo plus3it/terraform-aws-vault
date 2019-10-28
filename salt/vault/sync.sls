@@ -9,16 +9,16 @@ vault_logs_dir:
 
 sync_secrets_engines:
   vault.secret_engines_synced:
-    - configs: {{ vault.secrets_engines }}
+    - configs: {{ vault.secrets_engines | yaml }}
 
 sync_authentication_methods:
   vault.auth_methods_synced:
-    - configs: {{ vault.auth_methods }}
+    - configs: {{ vault.auth_methods | yaml }}
 
 sync_audit_devices:
   vault.audit_devices_synced:
-    - configs: {{ vault.audit_devices }}
+    - configs: {{ vault.audit_devices | yaml }}
 
 sync_policies:
   vault.policies_synced:
-    - policies: {{ vault.policies }}
+    - policies: {{ vault.policies | yaml }}
