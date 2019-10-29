@@ -73,3 +73,15 @@ variable "watchmaker_config" {
   description = "(Optional) URL to a Watchmaker config file"
   default     = ""
 }
+
+variable "toggle_update" {
+  type        = string
+  default     = "A"
+  description = "(Optional) Toggle that triggers a stack update by modifying the launch config, resulting in new instances; must be one of: A or B"
+}
+
+variable "vault_pillar_extra_config" {
+  description = "(Optional) List extra configurations to be referenced in the pillar"
+  default     = []
+}
+
