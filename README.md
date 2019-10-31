@@ -36,6 +36,7 @@ Terraform module that installs and configures Hashicorp Vault cluster with HA Dy
 | max\_capacity | (Optional) Maximum number of instances in the Autoscaling Group | string | `"2"` | no |
 | min\_capacity | (Optional) Minimum number of instances in the Autoscaling Group | string | `"1"` | no |
 | name | Name of the vault stack, will be use to prefix resources | string | n/a | yes |
+| point\_in\_time\_recovery | (Optional) Enabling Amazon DynamoDB point-in-time recovery (PITR) provides automatic backups of your DynamoDB table data. | bool | `"true"` | no |
 | pypi\_index\_url | (Optional) URL to the PyPi Index | string | `"https://pypi.org/simple"` | no |
 | route53\_zone\_id | Hosted zone ID Route 53 hosted zone | string | n/a | yes |
 | tags | (Optional) list of tags to include with resource | map(string) | `<map>` | no |

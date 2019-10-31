@@ -175,6 +175,12 @@ variable "dynamodb_target_value" {
   default     = 70
 }
 
+variable "point_in_time_recovery" {
+  type        = bool
+  description = "(Optional) Enabling Amazon DynamoDB point-in-time recovery (PITR) provides automatic backups of your DynamoDB table data."
+  default     = true
+}
+
 variable "enabled_repos" {
   type        = list(string)
   description = "(Optional) List of repos to be enabled with yum-config-manager. Epel repo will be enabled by default."
