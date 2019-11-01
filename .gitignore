@@ -23,3 +23,4 @@ go.sum
 
 #Vagrant related files
 .vagrant/
+.pillar/
