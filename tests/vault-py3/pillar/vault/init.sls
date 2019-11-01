@@ -18,6 +18,13 @@ vault:
         config:
           default_lease_ttl: 1800
           max_lease_ttl: 1800
+      - type: ad
+        path: ad
+        description: Provides auto-rotate password for AD accounts
+        config:
+          default_lease_ttl: 1800
+          max_lease_ttl: 1800
+        secret_config: ${secrets_ad_config}
 
     auth_methods:
       - type: token
@@ -26,6 +33,17 @@ vault:
         config:
           default_lease_ttl: 0
           max_lease_ttl: 0
+      - type: ldap
+        path: ldap
+        description: LDAP Auth
+        config:
+          default_lease_ttl: 1800
+          max_lease_ttl: 1800
+        auth_config: ${auth_ldap_config}
+        extra_config:
+          group_policy_map:
+            acb_admin:
+              - admin
 
     audit_devices:
       - type: file

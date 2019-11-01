@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+### 0.0.3
+
+**Commit Delta**: [Change from 0.0.2 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.2...0.0.3)
+
+**Released**: 2019.11.01
+
+**Summary**:
+
+* Added `vault_pillar_extra_config` input var. Allowing users to add sensitive information to the pillar by `auto.tfvars`
+* Added sample configs for `auth_ldap` and `secret_ad` to the test cases
+
 ### 0.0.2
 
 **Commit Delta**: [Change from 0.0.1 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.1...0.0.2)

@@ -243,6 +243,16 @@ variable "toggle_update" {
 
 variable "tags" {
   type        = map(string)
-  description = "(Optional) list of tags to include with resource"
+  description = "(Optional) List of tags to include with resource"
   default     = {}
+}
+
+variable "vault_pillar_extra_config" {
+  type = list(object({
+    name   = string
+    type   = string # this can be auth, secrets, policies, or audit
+    config = map(string)
+  }))
+  description = "(Optional) List extra configurations to be referenced in the pillar"
+  default     = []
 }

@@ -46,6 +46,12 @@ variable "watchmaker_config" {
   default     = ""
 }
 
+variable "toggle_update" {
+  type        = string
+  default     = "A"
+  description = "(Optional) Toggle that triggers a stack update by modifying the launch config, resulting in new instances; must be one of: A or B"
+}
+
 variable "vault_version" {
   description = "Version of Vault to be installed on servers"
   type        = string
@@ -71,5 +77,10 @@ variable "certificate_arn" {
 variable "ec2_extra_security_group_ids" {
   type        = list(string)
   description = "List of additional security groups to add to EC2 instances"
+  default     = []
+}
+
+variable "vault_pillar_extra_config" {
+  description = "(Optional) List extra configurations to be referenced in the pillar"
   default     = []
 }

@@ -7,7 +7,6 @@ resource "random_id" "name" {
   prefix      = "tf-vault"
 }
 
-
 module "vault-py3" {
   source = "../../"
 
@@ -29,14 +28,15 @@ module "vault-py3" {
   certificate_arn = var.certificate_arn
 
   # Vault settings
-  vault_version     = var.vault_version
-  vault_pillar_path = var.vault_pillar_path
-  dynamodb_table    = var.dynamodb_table
+  vault_version             = var.vault_version
+  vault_pillar_path         = var.vault_pillar_path
+  dynamodb_table            = var.dynamodb_table
+  vault_pillar_extra_config = var.vault_pillar_extra_config
 
   # Watchmaker settings
   watchmaker_config = var.watchmaker_config
 
-  toggle_update = "B"
+  toggle_update = var.toggle_update
 }
 
 output "cluster_url" {

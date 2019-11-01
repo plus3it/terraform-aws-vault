@@ -39,8 +39,9 @@ Terraform module that installs and configures Hashicorp Vault cluster with HA Dy
 | point\_in\_time\_recovery | (Optional) Enabling Amazon DynamoDB point-in-time recovery (PITR) provides automatic backups of your DynamoDB table data. | bool | `"true"` | no |
 | pypi\_index\_url | (Optional) URL to the PyPi Index | string | `"https://pypi.org/simple"` | no |
 | route53\_zone\_id | Hosted zone ID Route 53 hosted zone | string | n/a | yes |
-| tags | (Optional) list of tags to include with resource | map(string) | `<map>` | no |
+| tags | (Optional) List of tags to include with resource | map(string) | `<map>` | no |
 | toggle\_update | (Optional) Toggle that triggers a stack update by modifying the launch config, resulting in new instances; must be one of: A or B | string | `"A"` | no |
+| vault\_pillar\_extra\_config | (Optional) List extra configurations to be referenced in the pillar | object | `<list>` | no |
 | vault\_pillar\_path | Specify the path to vault pillar | string | n/a | yes |
 | vault\_url | The DNS address that vault will be accessible at. Stack name will be used as the url when value is set to empty. Example: vault.domain.net | string | `"null"` | no |
 | vault\_version | Version of Vault to be installed on servers | string | n/a | yes |
