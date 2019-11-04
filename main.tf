@@ -385,7 +385,9 @@ resource "aws_dynamodb_table" "this" {
 
   # Amazon DynamoDB point-in-time recovery (PITR) provides automatic backups of your DynamoDB table data.
   # By enabling this feature, Vault's dynamodb table can be recover to any point in time during the last 35 days.
-  point_in_time_recovery = var.point_in_time_recovery
+  point_in_time_recovery {
+    enabled = var.point_in_time_recovery
+  }
 
   tags = local.tags
 }

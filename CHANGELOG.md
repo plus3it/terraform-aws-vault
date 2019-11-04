@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+### 0.0.4
+
+**Commit Delta**: [Change from 0.0.3 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.3...0.0.4)
+
+**Released**: 2019.11.04
+
+**Summary**:
+
+* Fixed unsupported argument error on Dynamnodb resource. `point-in-time-recovery` needs to be defined as a block type.
+* Added more instructions to `README.md` on how to use the module and how to compose configs for the pillar.
+
 ### 0.0.3
 
 **Commit Delta**: [Change from 0.0.2 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.2...0.0.3)
