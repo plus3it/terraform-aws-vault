@@ -453,9 +453,11 @@ module "autoscaling_group" {
   WatchmakerAdminUsers  = var.watchmaker_admin_users
   WatchmakerOuPath      = var.watchmaker_ou_path
 
-  DesiredCapacity = var.desired_capacity
-  MinCapacity     = var.min_capacity
-  MaxCapacity     = var.max_capacity
+  DesiredCapacity   = var.desired_capacity
+  MinCapacity       = var.min_capacity
+  MaxCapacity       = var.max_capacity
+  ScaleDownSchedule = var.scale_down_schedule
+  ScaleUpSchedule   = var.scale_up_schedule
 
   EnableRepos = local.enabled_repos
 }
