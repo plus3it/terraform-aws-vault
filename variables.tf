@@ -157,6 +157,18 @@ variable "desired_capacity" {
   default     = "2"
 }
 
+variable "scale_down_schedule" {
+  type        = string
+  description = "(Optional) Scheduled Action in cron-format (UTC) to scale down to MinCapacity; ignored if empty or ScaleUpSchedule is unset (E.g. \"0 0 * * *\")"
+  default     = null
+}
+
+variable "scale_up_schedule" {
+  type        = string
+  description = "(Optional) Scheduled Action in cron-format (UTC) to scale up to MaxCapacity; ignored if empty or ScaleDownSchedule is unset (E.g. \"0 10 * * Mon-Fri\")"
+  default     = null
+}
+
 variable "dynamodb_max_read_capacity" {
   type        = number
   description = "(Optional) The max capacity of the scalable target for DynamoDb table autoscaling."

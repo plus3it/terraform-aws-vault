@@ -23,6 +23,9 @@ module "vault-py3" {
   cloudwatch_agent_url         = var.cloudwatch_agent_url
   ec2_extra_security_group_ids = var.ec2_extra_security_group_ids
 
+  scale_up_schedule   = var.scale_up_schedule
+  scale_down_schedule = var.scale_down_schedule
+
   domain_name     = var.domain_name
   route53_zone_id = var.route53_zone_id
   certificate_arn = var.certificate_arn

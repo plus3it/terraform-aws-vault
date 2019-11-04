@@ -26,6 +26,9 @@ module "base" {
   route53_zone_id = var.route53_zone_id
   certificate_arn = var.certificate_arn
 
+  scale_up_schedule   = var.scale_up_schedule
+  scale_down_schedule = var.scale_down_schedule
+
   # Vault settings
   vault_version             = var.vault_version
   vault_pillar_path         = var.vault_pillar_path

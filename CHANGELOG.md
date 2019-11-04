@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+### 0.0.5
+
+**Commit Delta**: [Change from 0.0.4 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.4...0.0.5)
+
+**Released**: 2019.11.04
+
+**Summary**:
+
+* Added input vars `scale_up_schedule` and `scale_down_schedule` to control AutoScaling Group Scheduled Action option. 
+
 ### 0.0.4
 
 **Commit Delta**: [Change from 0.0.3 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.3...0.0.4)
