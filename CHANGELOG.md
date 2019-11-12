@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+### 0.0.6
+
+**Commit Delta**: [Change from 0.0.5 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.5...0.0.6)
+
+**Released**: 2019.11.14
+
+**Summary**:
+
+* Fixed bug [#10](https://github.com/plus3it/terraform-aws-vault/issues/10) addressing forward slashes are being removed from `path`.
+* Changed `changes` output for the the `synced` salt state modules.
+  
 ### 0.0.5
 
 **Commit Delta**: [Change from 0.0.4 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.4...0.0.5)

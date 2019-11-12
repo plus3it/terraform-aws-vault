@@ -9,8 +9,7 @@ from builtins import super
 import logging
 import hashlib
 import json
-import os
-import glob
+
 from collections import OrderedDict
 
 log = logging.getLogger(__name__)
@@ -88,7 +87,9 @@ class VaultConfigBase(object):
         config = config or {}
 
         self.type = type
-        self.path = path.replace("/", "")
+        # Vault CLI treats a double forward slash ('//') as a single forward slash for a given path.
+        # To avoid issues with the requests module's redirection logic, we perform the same translation here.
+        self.path = str(path).replace('//', '/').strip('/')
         self.description = (description if description else "")
         self.config = {k: v for k, v in config.items() if v != ''}
 
@@ -113,10 +114,6 @@ class VaultConfigBase(object):
 
     def __eq__(self, other):
         return self.get_unique_id() == other.get_unique_id()
-
-    def __repr__(self):
-        return ("Path: %s - Type: %s - Desc: %s - Config: %s - Hash : %s" %
-                (self.path, self.type, self.description, str(self.config), self.get_unique_id()))
 
 
 class VaultAuthMethod(VaultConfigBase):
@@ -156,29 +153,7 @@ class VaultPolicyManager():
         """
         log.info("Initializing Vault Policies Manager...")
 
-    def get_remote_policies(self, client, ret):
-        """Retrieve policies from remote vault server
-
-        Arguments:
-            client {hvac} -- hvac client
-            ret {dict} -- salt state result
-
-        Returns:
-            [list] -- policies
-        """
-        log.info('Retrieving policies from vault...')
-        polices = []
-        policies_resp = client.sys.list_policies()
-
-        for policy in policies_resp['data']['policies']:
-            if not (policy == 'root' or policy == 'default'):
-                polices.append(policy)
-
-        log.info('Finished retrieving policies from vault.')
-
-        return polices
-
-    def push_policies(self, client, remote_policies, local_policies, ret):
+    def push_policies(self, client, remote_policies, local_policies):
         """Push policies from local config to remote vault server
 
         Arguments:
@@ -188,7 +163,7 @@ class VaultPolicyManager():
             ret {dict} -- salt state result
         """
         log.info('Pushing policies from local config folder to vault...')
-        new_policies = []
+
         for policy in local_policies:
             client.sys.create_or_update_policy(
                 name=policy['name'],
@@ -197,16 +172,11 @@ class VaultPolicyManager():
             if policy['name'] in remote_policies:
                 log.debug('Policy "%s" has been updated.', policy["name"])
             else:
-                new_policies.append(policy["name"])
                 log.debug('Policy "%s" has been created.', policy["name"])
-
-        # Build return object
-        ret['changes']['old'] = remote_policies
-        ret['changes']['new'] = new_policies or "No changes"
 
         log.info('Finished pushing policies local config folder to vault.')
 
-    def cleanup_policies(self, client, remote_policies, local_policies, ret):
+    def cleanup_policies(self, client, remote_policies, local_policies):
         """Removes policies that are not present in the local config
 
         Arguments:
@@ -216,17 +186,13 @@ class VaultPolicyManager():
             ret {dict} -- salt state result
         """
         log.info('Cleaning up vault policies...')
-        has_change = False
+
         for policy in remote_policies:
             if policy not in [pol['name'] for pol in local_policies]:
                 log.debug(
                     '"%s" is not found in configs folder. Removing it from vault...', policy)
-                has_change = True
                 client.sys.delete_policy(name=policy)
                 log.debug('"%s" is removed.', policy)
-
-        if has_change:
-            ret['changes']['new'] = [ob['name'] for ob in local_policies]
 
         log.info('Finished cleaning up vault policies.')
 
@@ -240,42 +206,39 @@ class VaultAuthManager():
         """
         log.info("Initializing Vault Auth Manager...")
 
-    def get_remote_auth_methods(self, client, ret):
-        """Retrieve authentication methods from remote vault server
+    def populate_remote_auth_methods(self, methods):
+        """Populating authentication methods from remote vault server
 
         Arguments:
-            client {hvac} -- hvac client
-            ret {dict} -- result from state
+            methods {list} -- authentication methods configuration from remote vault server
 
         Returns:
             list -- auth methods
         """
-        log.info('Retrieving auth methods from Vault...')
-        auth_resp = client.sys.list_auth_methods()
+        log.info('Populating auth methods from Vault...')
 
         auth_methods = []
-        for auth_method in auth_resp['data']:
+        for auth_method in methods:
             auth_methods.append(
                 VaultAuthMethod(
-                    type=auth_resp[auth_method]['type'],
-                    path=(auth_resp[auth_method]["path"]
-                          if 'path' in auth_resp[auth_method] else auth_method),
-                    description=auth_resp[auth_method]["description"],
+                    type=methods[auth_method]['type'],
+                    path=(methods[auth_method]["path"]
+                          if 'path' in methods[auth_method] else auth_method),
+                    description=methods[auth_method]["description"],
                     config=OrderedDict(
-                        sorted(auth_resp[auth_method]["config"].items()))
+                        sorted(methods[auth_method]["config"].items()))
                 )
             )
 
-        log.info('Finished retrieving auth methods from vault.')
+        log.info('Finished populating auth methods from Vault.')
 
         return auth_methods
 
-    def populate_local_auth_methods(self, configs, ret):
+    def populate_local_auth_methods(self, configs):
         """Get auth methods from local config
 
         Arguments:
             configs {list} -- auth methods information
-            ret {dict} -- salt state result
 
         Returns:
             list -- auth methods
@@ -311,18 +274,16 @@ class VaultAuthManager():
 
         return auth_methods
 
-    def configure_auth_methods(self, client, remote_methods, local_methods, ret):
+    def configure_auth_methods(self, client, remote_methods, local_methods):
         """Compare and configure local authentication methods with remote vault server
 
         Arguments:
             client {hvac} -- hvac client
             remote_methods {list} -- auth methods from remote vault server
             local_methods {list} -- auth methods from local config
-            ret {dict} -- salt state result
         """
         log.info('Processing and configuring auth methods...')
 
-        new_auth_methods = []
         ldap_groups = []
 
         for auth_method in local_methods:
@@ -348,7 +309,6 @@ class VaultAuthManager():
                     config=auth_method.config
                 )
                 log.debug('Auth method "%s" is enabled.', auth_method.type)
-                new_auth_methods.append(auth_method.type)
 
             # Provision config for specific auth method
             if auth_method.auth_config:
@@ -405,27 +365,21 @@ class VaultAuthManager():
                 log.debug(
                     'Auth method "%s" does not contain any extra configurations.', auth_method.type
                 )
-
-        # Build return object
-        ret['changes']['old'] = [ob.type for ob in remote_methods]
-        ret['changes']['new'] = new_auth_methods or "No changes"
-
         log.info('Finished processing and configuring auth methods...')
 
-    def cleanup_auth_methods(self, client, remote_methods, local_methods, ret):
+    def cleanup_auth_methods(self, client, remote_methods, local_methods):
         """Disabling any auth methods not present in the local config
 
         Arguments:
             client {hvac} -- hvac client
             remote_methods {list} -- auth methods from remote vault server
             local_methods {list} -- auth methods from local config
-            ret {dict} -- salt state result
         """
         log.info('Cleaning up auth methods...')
-        has_change = False
+
         for auth_method in remote_methods:
             if auth_method not in local_methods:
-                has_change = True
+
                 log.debug(
                     'Auth method "%s" does not exist in configuration. Disabling...', auth_method.type)
                 client.sys.disable_auth_method(
@@ -433,9 +387,6 @@ class VaultAuthManager():
                 )
                 log.debug('Auth method "%s" is disabled.',
                           auth_method.type)
-
-        if has_change:
-            ret['changes']['new'] = [ob.type for ob in local_methods]
 
         log.info('Finished cleaning up auth methods.')
 
@@ -450,41 +401,38 @@ class VaultSecretsManager():
         """
         log.info("Initializing Vault Secret Manager...")
 
-    def get_remote_secrets_engines(self, client, ret):
+    def populate_remote_secrets_engines(self, engines):
         """Retrieve secrets engines from remote vault server
 
         Arguments:
-            client {hvac} -- hvac client
-            ret {dict} -- salt state result
+            engines {list} -- secrets engines from remote vault
 
         Returns:
             list -- secrets engines
         """
-        log.info('Retrieving secrets engines from Vault')
+        log.info('Populating secrets engines from Vault')
         remote_secret_engines = []
-        secrets_engines_resp = client.sys.list_mounted_secrets_engines()
-        for engine in secrets_engines_resp['data']:
+        for engine in engines:
             remote_secret_engines.append(
                 VaultSecretEngine(
-                    type=secrets_engines_resp[engine]['type'],
-                    path=(secrets_engines_resp[engine]["path"]
-                          if 'path' in secrets_engines_resp[engine] else engine),
-                    description=secrets_engines_resp[engine]["description"],
+                    type=engines[engine]['type'],
+                    path=(engines[engine]["path"]
+                          if 'path' in engines[engine] else engine),
+                    description=engines[engine]["description"],
                     config=OrderedDict(
-                        sorted(secrets_engines_resp[engine]["config"].items()))
+                        sorted(engines[engine]["config"].items()))
                 )
             )
         remote_secret_engines.sort(key=lambda x: x.type)
 
-        log.info('Finished retrieving secrets engines from vault.')
+        log.info('Finished populating remote secrets engines from vault.')
         return remote_secret_engines
 
-    def populate_local_secrets_engines(self, configs, ret):
-        """Retrieve secrets engines from local config
+    def populate_local_secrets_engines(self, configs):
+        """Populating secrets engines from local config
 
         Arguments:
-            configs {list} -- local secrets engines information
-            ret {dict} -- salt state result
+            configs {list} -- local secrets engines
 
         Returns:
             list -- secrets engines
@@ -525,17 +473,16 @@ class VaultSecretsManager():
         log.info('Finished populating local secret engines.')
         return local_secret_engines
 
-    def configure_secrets_engines(self, client, remote_engines, local_engines, ret):
+    def configure_secrets_engines(self, client, remote_engines, local_engines):
         """Compare and configure local vault secrets engines config with vault remote servers
 
         Arguments:
             client {hvac} -- hvac client
             remote_engines {list} -- secrets engines from remote vault server
             local_engines {list} -- secrets engines from local vault config
-            ret {dict} -- salt state result
         """
         log.info('Processing and configuring secrets engines...')
-        new_secrets_engines = []
+
         for secret_engine in local_engines:
             log.debug('Checking if secret engine "%s" at path "%s" is enabled...',
                       secret_engine.type,
@@ -566,9 +513,6 @@ class VaultSecretsManager():
                     description=secret_engine.description,
                     config=secret_engine.config
                 )
-
-                new_secrets_engines.append(
-                    "type: {} - path: {}".format(secret_engine.type, secret_engine.path))
 
                 log.debug('Secret engine "%s" at path "%s" is enabled.',
                           secret_engine.type, secret_engine.path)
@@ -629,45 +573,31 @@ class VaultSecretsManager():
                 log.debug(
                     'Secret engine "%s" does not contain any extra configurations.', secret_engine.type
                 )
-        # Build return object
-        ret['changes']['old'] = [
-            "type: {} - path: {}".format(ob.type, ob.path) for ob in remote_engines]
-        ret['changes']['new'] = new_secrets_engines or "No changes"
 
         log.info('Finished proccessing and configuring secrets engines.')
 
-    def cleanup_secrets_engines(self, client, remote_engines, local_engines, ret):
+    def cleanup_secrets_engines(self, client, remote_engines, local_engines):
         """Disabling any secrets engines that are not present in the local config
 
         Arguments:
             client {hvac} -- hvac client
             remote_engines {list} -- secrets engines from remote vault server
             local_engines {list} -- secrets engines from local config
-            ret {dict} -- salt state result
         """
         log.info('Cleaning up secrets engines...')
-        has_changes = False
         for secret_engine in remote_engines:
-            if not (secret_engine.type == "system" or
-                    secret_engine.type == "cubbyhole" or
-                    secret_engine.type == "identity" or
-                    secret_engine.type == "generic"):
+            if not secret_engine.type in ["system", 'cubbyhole', 'identity', 'generic']:
                 if secret_engine in local_engines:
                     log.debug('Secrets engine "%s" at path "%s" exists in configuration, no cleanup necessary.',
                               secret_engine.type, secret_engine.path)
                 else:
                     log.debug('Secrets engine "%s" at path "%s" does not exist in configuration. Disabling...',
                               secret_engine.type, secret_engine.path)
-                    has_changes = True
                     client.sys.disable_secrets_engine(
                         path=secret_engine.path
                     )
                     log.debug('Secrets engine "%s" at path "%s" is disabled.',
                               secret_engine.type, secret_engine.type)
-
-        if has_changes:
-            ret['changes']['new'] = [
-                "type: {} - path: {}".format(ob.type, ob.path) for ob in local_engines]
 
         log.info('Finished cleaning up secrets engines.')
 
@@ -682,49 +612,44 @@ class VaultAuditManager():
         """
         log.info("Initializing Vault Audit Manager...")
 
-    def get_remote_audit_devices(self, client, ret):
-        """Get audit devices information from remote vault server
+    def populate_remote_audit_devices(self, devices):
+        """Populating audit devices information from remote vault server
 
         Arguments:
-            client {hvac} -- hvac client
-            ret {dict} -- salt state result
+            devices {list} -- audit devices config from remote vault server
 
         Returns:
             list -- audit devices
         """
         log.info("Retrieving audit devices from vault...")
-        devices = []
-        audit_devices_resp = client.sys.list_enabled_audit_devices()
-        log.debug(audit_devices_resp)
-        for device in audit_devices_resp['data']:
-            audit_device = audit_devices_resp[device]
-            devices.append(
+        audit_devices = []
+        for device in devices:
+            audit_devices.append(
                 VaultAuditDevice(
-                    type=audit_device['type'],
-                    path=(audit_device["path"]
-                          if 'path' in audit_device else device),
-                    description=audit_device["description"],
+                    type=devices[device]['type'],
+                    path=(devices[device]['path']
+                          if 'path' in devices[device] else device),
+                    description=devices[device]['description'],
                     config=OrderedDict(
-                        sorted(audit_device["options"].items()))
+                        sorted(devices[device]['options'].items()))
                 )
             )
 
         log.info('Finished retrieving audit devices from vault.')
 
-        return devices
+        return audit_devices
 
-    def get_local_audit_devices(self, configs, ret):
+    def get_local_audit_devices(self, configs):
         """Get audit device inforamtion from local config file
 
         Arguments:
             configs {list} -- audit devices
-            ret {dict} -- salt state result
 
         Returns:
             list -- audit devices
         """
         log.info("Loading audit devices from local config...")
-        devices = []
+        audit_devices = []
         if configs:
             for audit_device in configs:
                 config = None
@@ -733,7 +658,7 @@ class VaultAuditManager():
                         config = OrderedDict(
                             sorted(audit_device["config"].items()))
 
-                devices.append(
+                audit_devices.append(
                     VaultAuditDevice(
                         type=audit_device["type"],
                         path=audit_device["path"],
@@ -744,19 +669,18 @@ class VaultAuditManager():
 
         log.info('Finished loading audit devices from local config.')
 
-        return devices
+        return audit_devices
 
-    def configure_audit_devices(self, client, remote_devices, local_devices, ret):
+    def configure_audit_devices(self, client, remote_devices, local_devices):
         """Compare and configure audit devices
 
         Arguments:
             client {hvac} -- hvac client
             remote_devices {list} -- audit devices from remote vault server
             local_devices {list} -- audit devices from local vault config file
-            ret {dict} -- salt state result
         """
         log.info('Processing and configuring audit devices...')
-        new_audit_devices = []
+
         for audit_device in local_devices:
             log.debug('Checking if audit device "%s" at path "%s" is enabled...',
                       audit_device.type, audit_device.path)
@@ -770,7 +694,6 @@ class VaultAuditManager():
                     audit_device.type,
                     audit_device.path
                 )
-                new_audit_devices.append(audit_device.type)
                 client.sys.enable_audit_device(
                     device_type=audit_device.type,
                     path=audit_device.path,
@@ -780,33 +703,23 @@ class VaultAuditManager():
                 log.debug('Audit device "%s" at path "%s" is enabled.',
                           audit_device.type, audit_device.path)
 
-        # Build return object
-        ret['changes']['old'] = [ob.type for ob in remote_devices]
-        ret['changes']['new'] = new_audit_devices or "No changes"
-
         log.info('Finished processing audit devices.')
 
-    def cleanup_audit_devices(self, client, remote_devices, local_devices, ret):
+    def cleanup_audit_devices(self, client, remote_devices, local_devices):
         """Disabling any audit devices not present in the local config file
 
         Arguments:
             client {hvac} -- hvac client
             remote_devices {list} -- list of remote audit devices
             local_devices {list} -- list of local audit devices
-            ret {dict} -- salt state result
         """
         log.info('Cleaning up audit devices...')
-        has_changes = False
         for audit_device in remote_devices:
             if audit_device not in local_devices:
                 log.info('Disabling audit device "%s" at path "%s"...',
                         audit_device.type, audit_device.path)
-                has_changes = True
                 client.sys.disable_audit_device(
                     path=audit_device.path
                 )
-
-        if has_changes:
-            ret['changes']['new'] = [ob.type for ob in local_devices]
 
         log.info('Finished cleaning up audit devices.')
