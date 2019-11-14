@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import logging
 import json
+import salt.utils.dictdiffer
 
 log = logging.getLogger(__name__)
 
@@ -119,31 +120,31 @@ def secret_engines_synced(name, configs=[]):
         'changes': {}
     }
 
-    log.debug(json.dumps(configs))
-
     secretsManager = __salt__['vault.get_secret_engines_manager']()
 
     try:
-        remote_secret_engines = secretsManager.get_remote_secrets_engines(
-            client, ret)
+        existing_secret_engines = client.sys.list_mounted_secrets_engines()[
+            'data']
+
+        remote_secret_engines = secretsManager.populate_remote_secrets_engines(
+            existing_secret_engines)
 
         local_secret_engines = secretsManager.populate_local_secrets_engines(
-            configs, ret)
+            configs)
 
         secretsManager.configure_secrets_engines(
             client,
             remote_secret_engines,
-            local_secret_engines,
-            ret
+            local_secret_engines
         )
 
         secretsManager.cleanup_secrets_engines(
             client,
             remote_secret_engines,
-            local_secret_engines,
-            ret
+            local_secret_engines
         )
-
+        ret['changes'] = salt.utils.dictdiffer.deep_diff(
+            existing_secret_engines, client.sys.list_mounted_secrets_engines()['data'])
         ret['result'] = True
     except Exception as e:
         ret['result'] = False
@@ -178,25 +179,26 @@ def auth_methods_synced(name, configs=[]):
     authsManager = __salt__['vault.get_auth_methods_manager']()
 
     try:
-
-        remote_auth_methods = authsManager.get_remote_auth_methods(client, ret)
+        existing_auth_methods = client.sys.list_auth_methods()['data']
+        remote_auth_methods = authsManager.populate_remote_auth_methods(
+            existing_auth_methods)
         local_auth_methods = authsManager.populate_local_auth_methods(
-            configs, ret)
+            configs)
 
         authsManager.configure_auth_methods(
             client,
             remote_auth_methods,
-            local_auth_methods,
-            ret
+            local_auth_methods
         )
 
         authsManager.cleanup_auth_methods(
             client,
             remote_auth_methods,
-            local_auth_methods,
-            ret
+            local_auth_methods
         )
 
+        ret['changes'] = salt.utils.dictdiffer.deep_diff(
+            existing_auth_methods, client.sys.list_auth_methods()['data'])
         ret['result'] = True
     except Exception as e:
         ret['result'] = False
@@ -219,7 +221,6 @@ def policies_synced(name, policies=[]):
 
     client = __utils__['vault.build_client']()
     remote_policies = []
-    local_policies = []
     ret = {
         'name': name,
         'comment': '',
@@ -230,13 +231,22 @@ def policies_synced(name, policies=[]):
     policiesManager = __salt__['vault.get_policies_manager']()
 
     try:
-        remote_policies = policiesManager.get_remote_policies(client, ret)
-        local_policies = policies
-        policiesManager.push_policies(
-            client, remote_policies, local_policies, ret)
-        policiesManager.cleanup_policies(
-            client, remote_policies, local_policies, ret)
 
+        existing_policies = client.sys.list_policies()['data']
+        remote_policies = []
+
+        for policy in existing_policies['policies']:
+            if not (policy == 'root' or policy == 'default'):
+                remote_policies.append(policy)
+
+        policiesManager.push_policies(
+            client, remote_policies, policies)
+
+        policiesManager.cleanup_policies(
+            client, remote_policies, policies)
+
+        ret['changes'] = salt.utils.dictdiffer.deep_diff(
+            existing_policies, client.sys.list_policies()['data'])
         ret['result'] = True
     except Exception as e:
         ret['result'] = False
@@ -257,8 +267,8 @@ def audit_devices_synced(name, configs=[]):
     """
 
     client = __utils__['vault.build_client']()
-    remote_devices = []
-    local_devices = []
+    remote_audit_devices = []
+    local_audit_devices = []
     ret = {
         'name': name,
         'comment': '',
@@ -268,19 +278,25 @@ def audit_devices_synced(name, configs=[]):
 
     auditDevicesManager = __salt__['vault.get_audit_device_manager']()
     try:
+        existing_audit_devices = client.sys.list_enabled_audit_devices()[
+            'data']
 
-        remote_devices = auditDevicesManager.get_remote_audit_devices(
-            client, ret)
+        remote_audit_devices = auditDevicesManager.populate_remote_audit_devices(
+            existing_audit_devices)
 
-        local_devices = auditDevicesManager.get_local_audit_devices(
-            configs, ret)
+        log.debug('remote audit devices, {}'.format(remote_audit_devices))
+
+        local_audit_devices = auditDevicesManager.get_local_audit_devices(
+            configs)
 
         auditDevicesManager.configure_audit_devices(
-            client, remote_devices, local_devices, ret)
+            client, remote_audit_devices, local_audit_devices)
 
         auditDevicesManager.cleanup_audit_devices(
-            client, remote_devices, local_devices, ret)
+            client, remote_audit_devices, local_audit_devices)
 
+        ret['changes'] = salt.utils.dictdiffer.deep_diff(
+            existing_audit_devices, client.sys.list_enabled_audit_devices()['data'])
         ret['result'] = True
     except Exception as e:
         ret['result'] = False
