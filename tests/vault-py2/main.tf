@@ -30,10 +30,10 @@ module "base" {
   scale_down_schedule = var.scale_down_schedule
 
   # Vault settings
-  vault_version             = var.vault_version
-  vault_pillar_path         = var.vault_pillar_path
-  dynamodb_table            = var.dynamodb_table
-  vault_pillar_extra_config = var.vault_pillar_extra_config
+  vault_version        = var.vault_version
+  vault_pillar_path    = var.vault_pillar_path
+  dynamodb_table       = var.dynamodb_table
+  pillar_template_vars = var.pillar_template_vars
 
 
   # Watchmaker settings

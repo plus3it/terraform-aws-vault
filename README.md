@@ -216,6 +216,7 @@ sync_policies:
 | max\_capacity | (Optional) Maximum number of instances in the Autoscaling Group | string | `"2"` | no |
 | min\_capacity | (Optional) Minimum number of instances in the Autoscaling Group | string | `"1"` | no |
 | name | Name of the vault stack, will be use to prefix resources | string | n/a | yes |
+| pillar\_template\_vars | (Optional) List extra configurations to be referenced in the pillar | map | `<map>` | no |
 | point\_in\_time\_recovery | (Optional) Enabling Amazon DynamoDB point-in-time recovery (PITR) provides automatic backups of your DynamoDB table data. | bool | `"true"` | no |
 | pypi\_index\_url | (Optional) URL to the PyPi Index | string | `"https://pypi.org/simple"` | no |
 | route53\_zone\_id | Hosted zone ID Route 53 hosted zone | string | n/a | yes |
@@ -223,7 +224,6 @@ sync_policies:
 | scale\_up\_schedule | (Optional) Scheduled Action in cron-format (UTC) to scale up to MaxCapacity; ignored if empty or ScaleDownSchedule is unset (E.g. "0 10 * * Mon-Fri") | string | `"null"` | no |
 | tags | (Optional) List of tags to include with resource | map(string) | `<map>` | no |
 | toggle\_update | (Optional) Toggle that triggers a stack update by modifying the launch config, resulting in new instances; must be one of: A or B | string | `"A"` | no |
-| vault\_pillar\_extra\_config | (Optional) List extra configurations to be referenced in the pillar | object | `<list>` | no |
 | vault\_pillar\_path | Specify the path to vault pillar | string | n/a | yes |
 | vault\_url | The DNS address that vault will be accessible at. Stack name will be used as the url when value is set to empty. Example: vault.domain.net | string | `"null"` | no |
 | vault\_version | Version of Vault to be installed on servers | string | n/a | yes |

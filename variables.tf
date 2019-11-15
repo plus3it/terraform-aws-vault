@@ -259,12 +259,7 @@ variable "tags" {
   default     = {}
 }
 
-variable "vault_pillar_extra_config" {
-  type = list(object({
-    name   = string
-    type   = string # this can be auth, secrets, policies, or audit
-    config = map(string)
-  }))
+variable "pillar_template_vars" {
   description = "(Optional) List extra configurations to be referenced in the pillar"
-  default     = []
+  default     = {}
 }

@@ -80,9 +80,9 @@ variable "toggle_update" {
   description = "(Optional) Toggle that triggers a stack update by modifying the launch config, resulting in new instances; must be one of: A or B"
 }
 
-variable "vault_pillar_extra_config" {
+variable "pillar_template_vars" {
   description = "(Optional) List extra configurations to be referenced in the pillar"
-  default     = []
+  default     = {}
 }
 
 variable "scale_down_schedule" {
