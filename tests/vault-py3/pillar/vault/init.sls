@@ -33,6 +33,24 @@ vault:
         config:
           default_lease_ttl: 0
           max_lease_ttl: 0
+      - type: aws
+        path: aws/ec2 #path will be auth/aws/ec2
+        description: Authenticate AWS Instances
+        config:
+          default_lease_ttl: 1800
+          max_lease_ttl: 1800
+        extra_config:
+          roles:
+            test-role-1:
+              auth_type: ec2
+              bound_vpc_id: vpc-123123
+              mount_point: aws
+              ttl: 123
+            test-role-2:
+              auth_type: ec2
+              bound_vpc_id: vpc-123123
+              mount_point: aws
+              ttl: 123
       - type: ldap
         path: ldap
         description: LDAP Auth
@@ -77,3 +95,9 @@ vault:
             'sys/mounts':  {capabilities: [read]}
             # Read health check
             'sys/health':  {capabilities: [read, sudo]}
+            - name: admin
+      - name: watchmaker
+        content:
+          path:
+            # Manage ad secret engines broadly across Vault
+            'ad/creds/join-domain-role': {capabilities: [create, read, update, delete, list, sudo]}

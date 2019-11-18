@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+### 0.0.7
+
+**Commit Delta**: [Change from 0.0.6 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.6...0.0.7)
+
+**Released**: 2019.11.18
+
+**Summary**:
+
+* Changed `pillar_template_vars` to simplifies the inputs.
+* Added `extra_config` provisioner for AWS Auth method.
+  
 ### 0.0.6
 
 **Commit Delta**: [Change from 0.0.5 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.5...0.0.6)

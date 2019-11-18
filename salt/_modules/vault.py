@@ -284,8 +284,6 @@ class VaultAuthManager():
         """
         log.info('Processing and configuring auth methods...')
 
-        ldap_groups = []
-
         for auth_method in local_methods:
             log.debug('Checking if auth method "%s" is enabled...',
                       auth_method.path)
@@ -323,44 +321,125 @@ class VaultAuthManager():
                 log.debug(
                     'Auth method "%s" does not contain any specific configurations.', auth_method.type)
 
+            # Provision extra config for specific auth method
             if auth_method.extra_config:
                 log.debug(
                     'Provisioning extra configurations for auth method "%s"', auth_method.type)
 
-                # Get LDAP group mapping from vault
-                try:
-                    ldap_groups = client.auth.ldap.list_groups()
-                    log.debug('The following groups are configured in the LDAP auth method: {groups}'.format(
-                        groups=','.join(ldap_groups['data']['keys'])
-                    ))
-                except hvac.exceptions.InvalidPath:
-                    pass
+                if auth_method.type == 'ldap':
+                    ldap_groups = []
+                    # Get LDAP group mapping from vault
+                    try:
+                        ldap_groups = client.auth.ldap.list_groups(
+                            mount_point=auth_method.path)
+                        log.debug('The following groups are configured in the LDAP auth method "{path}": {groups}'.format(
+                            path=auth_method.path,
+                            groups=','.join(ldap_groups['data']['keys'])
+                        ))
+                    except hvac.exceptions.InvalidPath:
+                        pass
 
-                # Update LDAP group mapping
-                log.debug(
-                    'Writing LDAP group -> Policy mappings for "%s"', str(auth_method.path))
-                local_config_groups = auth_method.extra_config["group_policy_map"]
-                for key in local_config_groups:
-                    log.debug('LDAP Group ["%s"] -> Policies %s',
-                              str(key), local_config_groups[key])
+                    # Update LDAP group mapping
+                    log.debug(
+                        'Writing LDAP group -> Policy mappings for "%s"', str(auth_method.path))
+                    local_config_groups = auth_method.extra_config["group_policy_map"]
+                    for key in local_config_groups:
+                        log.debug('LDAP Group ["%s"] -> Policies %s',
+                                  str(key), local_config_groups[key])
 
-                    client.auth.ldap.create_or_update_group(
-                        name=key,
-                        policies=local_config_groups[key]
-                    )
+                        client.auth.ldap.create_or_update_group(
+                            name=key,
+                            policies=local_config_groups[key],
+                            mount_point=auth_method.path
+                        )
 
-                # Clean up LDAP group mapping
-                if ldap_groups:
-                    for group in ldap_groups:
-                        if group in {k.lower(): v for k, v in local_config_groups.items()}:
-                            log.debug(
-                                'LDAP group mapping ["%s"] exists in configuration, no cleanup necessary', group)
-                        else:
-                            log.debug(
-                                'LDAP group mapping ["%s"] does not exist in configuration, deleting...', group)
-                            client.auth.ldap.delete_group(name=group)
-                            log.debug(
-                                'LDAP group mapping ["%s"] deleted.', group)
+                    # Clean up LDAP group mapping
+                    if ldap_groups:
+                        for group in ldap_groups:
+                            if group in {k.lower(): v for k, v in local_config_groups.items()}:
+                                log.debug(
+                                    'LDAP group mapping ["%s"] exists in configuration, no cleanup necessary', group)
+                            else:
+                                log.debug(
+                                    'LDAP group mapping ["%s"] does not exist in configuration, deleting...', group)
+                                client.auth.ldap.delete_group(
+                                    name=group,
+                                    mount_point=auth_method.path
+                                )
+                                log.debug(
+                                    'LDAP group mapping ["%s"] deleted.', group)
+
+                if auth_method.type == 'aws':
+                    # Get aws roles from vault
+                    configured_roles = []
+                    try:
+                        configured_roles = client.auth.aws.list_roles(
+                            mount_point=auth_method.path)
+                        log.debug('The following roles are configured for AWS auth method "{path}": {roles}'.format(
+                            path=auth_method.path,
+                            roles=','.join(configured_roles['keys'])
+                        ))
+                    except hvac.exceptions.InvalidPath:
+                        pass
+
+                    # Update aws roles
+                    log.debug(
+                        'Writing roles for "%s"', str(auth_method.path))
+                    local_config_roles = auth_method.extra_config["roles"]
+                    for key in local_config_roles:
+                        log.debug('role ["%s"] -> config %s',
+                                  str(key), local_config_roles[key])
+                        role_config = local_config_roles[key]
+                        client.auth.aws.create_role(
+                            role=key,
+                            auth_type=role_config.get('auth_type', 'iam'),
+                            bound_ami_id=role_config.get('bound_ami_id'),
+                            bound_account_id=role_config.get(
+                                'bound_account_id'),
+                            bound_region=role_config.get('bound_region'),
+                            bound_vpc_id=role_config.get('bound_vpc_id'),
+                            bound_subnet_id=role_config.get('bound_subnet_id'),
+                            bound_iam_role_arn=role_config.get(
+                                'bound_iam_role_arn'),
+                            bound_iam_instance_profile_arn=role_config.get(
+                                'bound_iam_instance_profile_arn'),
+                            bound_ec2_instance_id=role_config.get(
+                                'bound_ec2_instance_id'),
+                            role_tag=role_config.get('role_tag'),
+                            bound_iam_principal_arn=role_config.get(
+                                'bound_iam_principal_arn'),
+                            inferred_entity_type=role_config.get(
+                                'inferred_entity_type'),
+                            inferred_aws_region=role_config.get(
+                                'inferred_aws_region'),
+                            resolve_aws_unique_ids=role_config.get(
+                                'resolve_aws_unique_ids'),
+                            ttl=role_config.get('ttl'),
+                            max_ttl=role_config.get('max_ttl'),
+                            period=role_config.get('period'),
+                            policies=role_config.get('policies'),
+                            allow_instance_migration=role_config.get(
+                                'allow_instance_migration'),
+                            disallow_reauthentication=role_config.get(
+                                'disallow_reauthentication'),
+                            mount_point=role_config.get('mount_point', 'aws')
+                        )
+
+                    # Clean up aws roles from vault
+                    if configured_roles:
+                        for role in configured_roles['keys']:
+                            if role not in {k.lower(): v for k, v in local_config_roles.items()}:
+                                log.debug(
+                                    'Role ["%s"] does not exist in configuration, deleting...', role)
+                                client.auth.aws.delete_role(
+                                    role=role,
+                                    mount_point=auth_method.path
+                                )
+                                log.debug('Role ["%s"] deleted.', role)
+                            else:
+                                log.debug(
+                                    'Role ["%s"] exists in configuration, no cleanup necessary', role)
+
             else:
                 log.debug(
                     'Auth method "%s" does not contain any extra configurations.', auth_method.type
@@ -535,7 +614,7 @@ class VaultSecretsManager():
 
             if secret_engine.extra_config:
                 log.info(
-                    'Provisioning extra conifgurations for for "%s" secrets engine...', secret_engine.type)
+                    'Provisioning extra configurations for for "%s" secrets engine...', secret_engine.type)
 
                 if secret_engine.type == 'ad':
                     # Get roles from vault
