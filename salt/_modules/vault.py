@@ -158,21 +158,16 @@ class VaultPolicyManager():
 
         Arguments:
             client {hvac} -- hvac client
-            remote_policies {list} -- policies from the remote vault server
-            local_policies {list} -- policies from local config
+            remote_policies {dict} -- policies from the remote vault server
+            local_policies {dict} -- policies from local config
             ret {dict} -- salt state result
         """
         log.info('Pushing policies from local config folder to vault...')
 
-        for policy in local_policies:
-            client.sys.create_or_update_policy(
-                name=policy['name'],
-                policy=policy['content']
-            )
-            if policy['name'] in remote_policies:
-                log.debug('Policy "%s" has been updated.', policy["name"])
-            else:
-                log.debug('Policy "%s" has been created.', policy["name"])
+        for name, policy in local_policies.items():
+            client.sys.create_or_update_policy(name, policy)
+            log.debug('Policy ["%s"] has been %s.', name,
+                      'updated' if name in remote_policies else 'created')
 
         log.info('Finished pushing policies local config folder to vault.')
 
@@ -181,18 +176,18 @@ class VaultPolicyManager():
 
         Arguments:
             client {hvac} -- hvac client
-            remote_policies {list} -- policies current on the remote vault server
-            local_policies {list} --policies from local config
+            remote_policies {dict} -- policies current on the remote vault server
+            local_policies {dict} --policies from local config
             ret {dict} -- salt state result
         """
         log.info('Cleaning up vault policies...')
 
         for policy in remote_policies:
-            if policy not in [pol['name'] for pol in local_policies]:
-                log.debug(
-                    '"%s" is not found in configs folder. Removing it from vault...', policy)
-                client.sys.delete_policy(name=policy)
-                log.debug('"%s" is removed.', policy)
+            if policy not in local_policies:
+                log.debug('Policy ["%s"] is not found in local config. '
+                          'Removing it from vault...', policy)
+                client.sys.delete_policy(policy)
+                log.debug('Policy ["%s"] is removed.', policy)
 
         log.info('Finished cleaning up vault policies.')
 
@@ -210,10 +205,10 @@ class VaultAuthManager():
         """Populating authentication methods from remote vault server
 
         Arguments:
-            methods {list} -- authentication methods configuration from remote vault server
+            methods {dict} -- authentication methods configuration from remote vault server
 
         Returns:
-            list -- auth methods
+            dict -- auth methods
         """
         log.info('Populating auth methods from Vault...')
 
@@ -238,33 +233,29 @@ class VaultAuthManager():
         """Get auth methods from local config
 
         Arguments:
-            configs {list} -- auth methods information
+            configs {dict} -- auth methods information
 
         Returns:
-            list -- auth methods
+            dict -- auth methods
         """
         log.info('Populating local auth methods...')
 
         auth_methods = []
         for auth_method in configs:
-            auth_config = None
-            extra_config = None
 
-            if "auth_config" in auth_method:
-                auth_config = OrderedDict(
-                    sorted(auth_method["auth_config"].items()))
-
-            if "extra_config" in auth_method:
-                extra_config = OrderedDict(
-                    sorted(auth_method["extra_config"].items()))
+            config = OrderedDict(
+                sorted(auth_method.get("config", {}).items()))
+            auth_config = OrderedDict(
+                sorted(auth_method.get("auth_config", {}).items()))
+            extra_config = OrderedDict(
+                sorted(auth_method.get("extra_config", {}).items()))
 
             auth_methods.append(
                 VaultAuthMethod(
                     type=auth_method["type"],
                     path=auth_method["path"],
                     description=auth_method["description"],
-                    config=OrderedDict(
-                        sorted(auth_method["config"].items())),
+                    config=config,
                     auth_config=auth_config,
                     extra_config=extra_config
                 )
@@ -279,8 +270,8 @@ class VaultAuthManager():
 
         Arguments:
             client {hvac} -- hvac client
-            remote_methods {list} -- auth methods from remote vault server
-            local_methods {list} -- auth methods from local config
+            remote_methods {dict} -- auth methods from remote vault server
+            local_methods {dict} -- auth methods from local config
         """
         log.info('Processing and configuring auth methods...')
 
@@ -288,8 +279,8 @@ class VaultAuthManager():
             log.debug('Checking if auth method "%s" is enabled...',
                       auth_method.path)
             if auth_method in remote_methods:
-                log.debug(
-                    'Auth method "%s" is already enabled. Tuning...', auth_method.path)
+                log.debug('Auth method "%s" is already enabled. '
+                          'Tuning...', auth_method.path)
                 client.sys.tune_auth_method(
                     path=auth_method.path,
                     description=auth_method.description,
@@ -298,8 +289,8 @@ class VaultAuthManager():
                 )
                 log.debug('Auth method "%s" is tuned.', auth_method.type)
             else:
-                log.debug(
-                    'Auth method "%s" is not enabled. Enabling now...', auth_method.path)
+                log.debug('Auth method "%s" is not enabled. '
+                          'Enabling now...', auth_method.path)
                 client.sys.enable_auth_method(
                     method_type=auth_method.type,
                     path=auth_method.path,
@@ -308,142 +299,87 @@ class VaultAuthManager():
                 )
                 log.debug('Auth method "%s" is enabled.', auth_method.type)
 
+            remote_extra_config = []
+            funcs = {
+                'aws': {
+                    'list': client.auth.aws.list_roles,
+                    'create': client.auth.aws.create_role,
+                    'delete': client.auth.aws.delete_role,
+                    'configure': client.auth.aws.configure,
+                    'key': 'roles'
+                },
+                'ldap': {
+                    'list': client.auth.ldap.list_groups,
+                    'create': client.auth.ldap.create_or_update_group,
+                    'delete': client.auth.ldap.delete_group,
+                    'configure': client.auth.ldap.configure,
+                    'key': 'group_policy_map'
+                }
+            }
+
             # Provision config for specific auth method
             if auth_method.auth_config:
-                if auth_method.type == "ldap":
-                    ldap_configuration = client.auth.ldap.read_configuration()
-                    log.debug('The LDAP auth method is configured with a LDAP server URL of: {url}'.format(
-                        url=ldap_configuration['data']['url']))
-                    log.debug('Provisioning configuration for LDAP...')
-                    client.auth.ldap.configure(**auth_method.auth_config)
-                    log.debug('Configuration for LDAP is provisioned.')
+                log.debug('Provisioning configuration for %s...',
+                          auth_method.type)
+                funcs[auth_method.type]['configure'](**auth_method.auth_config)
+                log.debug('Configuration for %s is provisioned.',
+                          auth_method.type)
             else:
-                log.debug(
-                    'Auth method "%s" does not contain any specific configurations.', auth_method.type)
+                log.debug('Auth method "%s" does not contain any %s configurations '
+                          'from pillar.', auth_method.type, auth_method.type)
+
+            # Retrieve extra configuration from vault
+            try:
+                log.debug('Retrieving extra configuration from Vault for auth method "%s"...',
+                          auth_method.type)
+                remote_extra_config = funcs[auth_method.type]['list'](
+                    auth_method.path)
+
+                if auth_method.type in ['ldap']:
+                    remote_extra_config = remote_extra_config['data']['keys']
+                else:
+                    remote_extra_config = remote_extra_config['keys']
+
+                log.debug('Provisioned extra configuration for auth method "%s": %s',
+                          auth_method.path, ','.join(remote_extra_config))
+            except hvac.exceptions.InvalidPath:
+                pass
 
             # Provision extra config for specific auth method
             if auth_method.extra_config:
-                log.debug(
-                    'Provisioning extra configurations for auth method "%s"', auth_method.type)
+                log.debug('Provisioning extra configurations for '
+                          'auth method "%s"...', auth_method.type)
+                # Update groups/roles mapping
+                for item, config in auth_method.extra_config[funcs[auth_method.type]['key']].items():
+                    log.debug('"%s" -> Config %s', str(item), config)
+                    # adding moint_point to all config
+                    config.update({'mount_point': auth_method.path})
+                    # call api to update the config
+                    funcs[auth_method.type]['create'](**config)
 
-                if auth_method.type == 'ldap':
-                    ldap_groups = []
-                    # Get LDAP group mapping from vault
-                    try:
-                        ldap_groups = client.auth.ldap.list_groups(
-                            mount_point=auth_method.path)
-                        log.debug('The following groups are configured in the LDAP auth method "{path}": {groups}'.format(
-                            path=auth_method.path,
-                            groups=','.join(ldap_groups['data']['keys'])
-                        ))
-                    except hvac.exceptions.InvalidPath:
-                        pass
-
-                    # Update LDAP group mapping
-                    log.debug(
-                        'Writing LDAP group -> Policy mappings for "%s"', str(auth_method.path))
-                    local_config_groups = auth_method.extra_config["group_policy_map"]
-                    for key in local_config_groups:
-                        log.debug('LDAP Group ["%s"] -> Policies %s',
-                                  str(key), local_config_groups[key])
-
-                        client.auth.ldap.create_or_update_group(
-                            name=key,
-                            policies=local_config_groups[key],
-                            mount_point=auth_method.path
-                        )
-
-                    # Clean up LDAP group mapping
-                    if ldap_groups:
-                        for group in ldap_groups:
-                            if group in {k.lower(): v for k, v in local_config_groups.items()}:
-                                log.debug(
-                                    'LDAP group mapping ["%s"] exists in configuration, no cleanup necessary', group)
-                            else:
-                                log.debug(
-                                    'LDAP group mapping ["%s"] does not exist in configuration, deleting...', group)
-                                client.auth.ldap.delete_group(
-                                    name=group,
-                                    mount_point=auth_method.path
-                                )
-                                log.debug(
-                                    'LDAP group mapping ["%s"] deleted.', group)
-
-                if auth_method.type == 'aws':
-                    # Get aws roles from vault
-                    configured_roles = []
-                    try:
-                        configured_roles = client.auth.aws.list_roles(
-                            mount_point=auth_method.path)
-                        log.debug('The following roles are configured for AWS auth method "{path}": {roles}'.format(
-                            path=auth_method.path,
-                            roles=','.join(configured_roles['keys'])
-                        ))
-                    except hvac.exceptions.InvalidPath:
-                        pass
-
-                    # Update aws roles
-                    log.debug(
-                        'Writing roles for "%s"', str(auth_method.path))
-                    local_config_roles = auth_method.extra_config["roles"]
-                    for key in local_config_roles:
-                        log.debug('role ["%s"] -> config %s',
-                                  str(key), local_config_roles[key])
-                        role_config = local_config_roles[key]
-                        client.auth.aws.create_role(
-                            role=key,
-                            auth_type=role_config.get('auth_type', 'iam'),
-                            bound_ami_id=role_config.get('bound_ami_id'),
-                            bound_account_id=role_config.get(
-                                'bound_account_id'),
-                            bound_region=role_config.get('bound_region'),
-                            bound_vpc_id=role_config.get('bound_vpc_id'),
-                            bound_subnet_id=role_config.get('bound_subnet_id'),
-                            bound_iam_role_arn=role_config.get(
-                                'bound_iam_role_arn'),
-                            bound_iam_instance_profile_arn=role_config.get(
-                                'bound_iam_instance_profile_arn'),
-                            bound_ec2_instance_id=role_config.get(
-                                'bound_ec2_instance_id'),
-                            role_tag=role_config.get('role_tag'),
-                            bound_iam_principal_arn=role_config.get(
-                                'bound_iam_principal_arn'),
-                            inferred_entity_type=role_config.get(
-                                'inferred_entity_type'),
-                            inferred_aws_region=role_config.get(
-                                'inferred_aws_region'),
-                            resolve_aws_unique_ids=role_config.get(
-                                'resolve_aws_unique_ids'),
-                            ttl=role_config.get('ttl'),
-                            max_ttl=role_config.get('max_ttl'),
-                            period=role_config.get('period'),
-                            policies=role_config.get('policies'),
-                            allow_instance_migration=role_config.get(
-                                'allow_instance_migration'),
-                            disallow_reauthentication=role_config.get(
-                                'disallow_reauthentication'),
-                            mount_point=role_config.get('mount_point', 'aws')
-                        )
-
-                    # Clean up aws roles from vault
-                    if configured_roles:
-                        for role in configured_roles['keys']:
-                            if role not in {k.lower(): v for k, v in local_config_roles.items()}:
-                                log.debug(
-                                    'Role ["%s"] does not exist in configuration, deleting...', role)
-                                client.auth.aws.delete_role(
-                                    role=role,
-                                    mount_point=auth_method.path
-                                )
-                                log.debug('Role ["%s"] deleted.', role)
-                            else:
-                                log.debug(
-                                    'Role ["%s"] exists in configuration, no cleanup necessary', role)
-
+                log.debug('Finish provisioning extra configurations for '
+                          'auth method "%s"...', auth_method.type)
             else:
-                log.debug(
-                    'Auth method "%s" does not contain any extra configurations.', auth_method.type
-                )
+                log.debug('Auth method "%s" does not contain '
+                          'any extra configurations from pillar.', auth_method.type)
+
+            # Clean up groups/role mapping
+            if remote_extra_config:
+                log.debug('Cleaning up auth method "%s" extra configuration '
+                          'from Vault...', auth_method.type)
+                for item in remote_extra_config:
+                    if item in auth_method.extra_config.get(funcs[auth_method.type]['key'], {}).keys():
+                        log.debug('"%s" exists in local configuration, '
+                                  'no cleanup necessary', item)
+                    else:
+                        log.debug('"%s" does not exist in configuration, '
+                                  'deleting...', item)
+                        funcs[auth_method.type]['delete'](
+                            item, auth_method.path)
+                        log.debug('"%s" is deleted.', item)
+                log.debug('Finished cleaning up auth method "%s" extra configuration.',
+                          auth_method.type)
+
         log.info('Finished processing and configuring auth methods...')
 
     def cleanup_auth_methods(self, client, remote_methods, local_methods):
@@ -451,22 +387,18 @@ class VaultAuthManager():
 
         Arguments:
             client {hvac} -- hvac client
-            remote_methods {list} -- auth methods from remote vault server
-            local_methods {list} -- auth methods from local config
+            remote_methods {dict} -- auth methods from remote vault server
+            local_methods {dict} -- auth methods from local config
         """
         log.info('Cleaning up auth methods...')
-
         for auth_method in remote_methods:
-            if auth_method not in local_methods:
-
-                log.debug(
-                    'Auth method "%s" does not exist in configuration. Disabling...', auth_method.type)
-                client.sys.disable_auth_method(
-                    path=auth_method.path
-                )
-                log.debug('Auth method "%s" is disabled.',
-                          auth_method.type)
-
+            if auth_method.type not in ['token']:
+                if auth_method not in local_methods:
+                    log.debug('Auth method "%s" does not exist in pillar configuration. '
+                              'Disabling...', auth_method.type)
+                    client.sys.disable_auth_method(auth_method.path)
+                    log.debug('Auth method "%s" is disabled.',
+                              auth_method.type)
         log.info('Finished cleaning up auth methods.')
 
 
@@ -484,22 +416,21 @@ class VaultSecretsManager():
         """Retrieve secrets engines from remote vault server
 
         Arguments:
-            engines {list} -- secrets engines from remote vault
+            engines {dict} -- secrets engines from remote vault
 
         Returns:
-            list -- secrets engines
+            dict -- secrets engines
         """
         log.info('Populating secrets engines from Vault')
         remote_secret_engines = []
-        for engine in engines:
+        for path, engine in engines.items():
             remote_secret_engines.append(
                 VaultSecretEngine(
-                    type=engines[engine]['type'],
-                    path=(engines[engine]["path"]
-                          if 'path' in engines[engine] else engine),
-                    description=engines[engine]["description"],
+                    type=engine['type'],
+                    path=path,
+                    description=engine["description"],
                     config=OrderedDict(
-                        sorted(engines[engine]["config"].items()))
+                        sorted(engine.get("config", {}).items()))
                 )
             )
         remote_secret_engines.sort(key=lambda x: x.type)
@@ -511,40 +442,24 @@ class VaultSecretsManager():
         """Populating secrets engines from local config
 
         Arguments:
-            configs {list} -- local secrets engines
+            configs {dict} -- local secrets engines
 
         Returns:
-            list -- secrets engines
+            dict -- secrets engines
         """
-        log.info('Populating local secret engines...')
+        log.info('Populating secrets engines configuration from pillar...')
         local_secret_engines = []
         for secret_engine in configs:
-            config = None
-            secret_config = None
-            extra_config = None
-
-            if 'config' in secret_engine:
-                if secret_engine["config"]:
-                    config = OrderedDict(
-                        sorted(secret_engine["config"].items()))
-
-            if 'secret_config' in secret_engine:
-                if secret_engine["secret_config"]:
-                    secret_config = OrderedDict(
-                        sorted(secret_engine["secret_config"].items()))
-
-            if 'extra_config' in secret_engine:
-                if secret_engine["extra_config"]:
-                    extra_config = OrderedDict(
-                        sorted(secret_engine["extra_config"].items()))
-
             local_secret_engines.append(VaultSecretEngine(
                 type=secret_engine["type"],
                 path=secret_engine["path"],
                 description=secret_engine["description"],
-                config=config,
-                secret_config=secret_config,
-                extra_config=extra_config
+                config=OrderedDict(
+                    sorted(secret_engine.get('config', {}).items())),
+                secret_config=OrderedDict(
+                    sorted(secret_engine.get('secret_config', {}).items())),
+                extra_config=OrderedDict(
+                    sorted(secret_engine.get('extra_config', {}).items()))
             ))
 
         local_secret_engines.sort(key=lambda x: x.type)
@@ -557,34 +472,28 @@ class VaultSecretsManager():
 
         Arguments:
             client {hvac} -- hvac client
-            remote_engines {list} -- secrets engines from remote vault server
-            local_engines {list} -- secrets engines from local vault config
+            remote_engines {dict} -- secrets engines from remote vault server
+            local_engines {dict} -- secrets engines from local vault config
         """
         log.info('Processing and configuring secrets engines...')
 
         for secret_engine in local_engines:
-            log.debug('Checking if secret engine "%s" at path "%s" is enabled...',
-                      secret_engine.type,
-                      secret_engine.path)
+            log.debug('Checking if secret engine "%s" at path "%s" is '
+                      ' enabled...', secret_engine.type, secret_engine.path)
             if secret_engine in remote_engines:
-                log.debug(
-                    'Secret engine "%s" at path "%s" is already enabled. Tuning...',
-                    secret_engine.type,
-                    secret_engine.path)
+                log.debug('Secret engine "%s" at path "%s" is already enabled. '
+                          'Tuning...', secret_engine.type, secret_engine.path)
 
                 client.sys.tune_mount_configuration(
                     path=secret_engine.path,
                     description=secret_engine.description,
-                    default_lease_ttl=secret_engine.config["default_lease_ttl"],
-                    max_lease_ttl=secret_engine.config["max_lease_ttl"]
+                    **secret_engine.config
                 )
                 log.debug('Secret engine "%s" at path "%s" is tuned.',
                           secret_engine.type, secret_engine.path)
             else:
-                log.debug(
-                    'Secret engine "%s" at path "%s" is not enabled. Enabling now...',
-                    secret_engine.type,
-                    secret_engine.path)
+                log.debug('Secret engine "%s" at path "%s" is not enabled. '
+                          'Enabling now...', secret_engine.type, secret_engine.path)
 
                 client.sys.enable_secrets_engine(
                     backend_type=secret_engine.type,
@@ -596,62 +505,86 @@ class VaultSecretsManager():
                 log.debug('Secret engine "%s" at path "%s" is enabled.',
                           secret_engine.type, secret_engine.path)
 
+            funcs = {
+                'kv': {
+                    'list': client.secrets.kv.list_secrets,
+                    'configure': client.secrets.kv.configure,
+                    'create': client.secrets.kv.create_or_update_secret
+                },
+                'ad': {
+                    'list': client.secrets.activedirectory.list_roles,
+                    'create': client.secrets.activedirectory.create_or_update_role,
+                    'delete': client.secrets.activedirectory.delete_role,
+                    'configure': client.secrets.activedirectory.configure
+                },
+                'database': {
+                    'configure': client.secrets.database.configure
+                }
+            }
+
+            baseConfig = {
+                'mount_point': secret_engine.path
+            }
+
+            remote_extra_config = []
+
             if secret_engine.secret_config:
-                log.info(
-                    'Provisioning specific configurations for "%s" secrets engine...', secret_engine.type)
+                log.info('Provisioning specific configurations for '
+                        '"%s" secrets engine...', secret_engine.type)
 
-                if secret_engine.type == 'ad':
-                    client.secrets.activedirectory.configure(
-                        **secret_engine.secret_config
-                    )
-                if secret_engine.type == 'database':
-                    client.secrets.database.configure(
-                        **secret_engine.secret_config
-                    )
+                secret_engine.secret_config.update(baseConfig)
 
-                log.info(
-                    'Finished provisioning specific configurations for "%s" secrets engine...', secret_engine.type)
+                funcs[secret_engine.type]['configure'](
+                    **secret_engine.secret_config)
 
+                log.info('Finished provisioning specific configurations for '
+                        '"%s" secrets engine...', secret_engine.type)
+
+            # Get roles from vault
+            try:
+                log.debug('Retrieving extra configuration from Vault for '
+                          'secrets engine "%s"...',
+                          secret_engine.type)
+                remote_extra_config = funcs[secret_engine.type]['list'](
+                    secret_engine.path)
+                log.debug('Provisioned extra configurations for '
+                          'secrets engine "%s":', remote_extra_config)
+            except hvac.exceptions.InvalidPath:
+                pass
+
+            # Provision extra configuration from pillar
             if secret_engine.extra_config:
-                log.info(
-                    'Provisioning extra configurations for for "%s" secrets engine...', secret_engine.type)
+                log.info('Provisioning extra configurations for '
+                        'secrets engine "%s"...', secret_engine.type)
+                # Create or update roles
+                for role, config in secret_engine.extra_config['roles'].items():
+                    log.debug('Role "%s" => Config %s', role, config)
 
-                if secret_engine.type == 'ad':
-                    # Get roles from vault
-                    existing_roles = None
-                    existing_roles = client.secrets.activedirectory.list_roles()
-                    log.debug(existing_roles)
-
-                    # Add new roles
-                    local_roles = secret_engine.extra_config['roles']
-                    for key in local_roles:
-                        log.debug('AD Role ["%s"] -> Role %s',
-                                  str(key), local_roles[key])
-
-                        client.secrets.activedirectory.create_or_update_role(
-                            name=key,
-                            service_account_name=local_roles[key]['service_account_name'],
-                            ttl=local_roles[key]['ttl']
-                        )
-
-                    # Remove missing roles
-                    if existing_roles:
-                        for role in existing_roles:
-                            if role in {k.lower(): v for k, v in local_roles.items()}:
-                                log.debug(
-                                    'AD role ["%s"] exists in configuration, no cleanup necessary', role)
-                            else:
-                                log.debug(
-                                    'Ad role ["%s"] does not exists in configuration, deleting...', role)
-                                client.secrets.activedirectory.delete_role(
-                                    name=role
-                                )
-                                log.debug(
-                                    'AD role has been ["%s"] deleted.', role)
+                    baseConfig.update({
+                        'name': role
+                    })
+                    config.update(baseConfig)
+                    funcs[secret_engine.type]['create'](**config)
+                log.info('Finished provisioning extra configurations for '
+                        ' secrets engine "%s"...', secret_engine.type)
             else:
-                log.debug(
-                    'Secret engine "%s" does not contain any extra configurations.', secret_engine.type
-                )
+                log.debug('No extra configurations present in the pillar for '
+                          'secrets engine "%s".', secret_engine.type)
+
+            # Cleaning up extra configurations from remote vault server
+            for item in remote_extra_config:
+                log.debug('Cleaning up secrets engine "%s" '
+                          'extra configuration from Vault...', secret_engine.type)
+                if item in {k.lower(): v for k, v in secret_engine.extra_config['roles'].items()}:
+                    log.debug('"%s" exists in pillar configuration.', item)
+                else:
+                    log.debug('"%s" does not exists in pillar configuration '
+                              'Deleting...', item)
+                    funcs[secret_engine.type]['delete'](
+                        item, secret_engine.path)
+                    log.debug('"%s" has been deleted.', item)
+                log.debug('Finished cleaning up secrets engine "%s" '
+                          'extra configuration.', secret_engine.type)
 
         log.info('Finished proccessing and configuring secrets engines.')
 
@@ -660,21 +593,19 @@ class VaultSecretsManager():
 
         Arguments:
             client {hvac} -- hvac client
-            remote_engines {list} -- secrets engines from remote vault server
-            local_engines {list} -- secrets engines from local config
+            remote_engines {dict} -- secrets engines from remote vault server
+            local_engines {dict} -- secrets engines from local config
         """
         log.info('Cleaning up secrets engines...')
         for secret_engine in remote_engines:
-            if not secret_engine.type in ["system", 'cubbyhole', 'identity', 'generic']:
+            if secret_engine.type not in ["system", 'cubbyhole', 'identity', 'generic']:
                 if secret_engine in local_engines:
-                    log.debug('Secrets engine "%s" at path "%s" exists in configuration, no cleanup necessary.',
-                              secret_engine.type, secret_engine.path)
+                    log.debug('Secrets engine "%s" at path "%s" exists in configuration, '
+                              'no cleanup necessary.', secret_engine.type, secret_engine.path)
                 else:
-                    log.debug('Secrets engine "%s" at path "%s" does not exist in configuration. Disabling...',
-                              secret_engine.type, secret_engine.path)
-                    client.sys.disable_secrets_engine(
-                        path=secret_engine.path
-                    )
+                    log.debug('Secrets engine "%s" at path "%s" does not exist in configuration. '
+                              'Disabling...', secret_engine.type, secret_engine.path)
+                    client.sys.disable_secrets_engine(secret_engine.path)
                     log.debug('Secrets engine "%s" at path "%s" is disabled.',
                               secret_engine.type, secret_engine.type)
 
@@ -695,22 +626,21 @@ class VaultAuditManager():
         """Populating audit devices information from remote vault server
 
         Arguments:
-            devices {list} -- audit devices config from remote vault server
+            devices {dict} -- audit devices config from remote vault server
 
         Returns:
-            list -- audit devices
+            dict -- audit devices
         """
         log.info("Retrieving audit devices from vault...")
         audit_devices = []
-        for device in devices:
+        for path, device in devices.items():
             audit_devices.append(
                 VaultAuditDevice(
-                    type=devices[device]['type'],
-                    path=(devices[device]['path']
-                          if 'path' in devices[device] else device),
-                    description=devices[device]['description'],
+                    type=device['type'],
+                    path=path,
+                    description=device['description'],
                     config=OrderedDict(
-                        sorted(devices[device]['options'].items()))
+                        sorted(device['options'].items()))
                 )
             )
 
@@ -722,10 +652,10 @@ class VaultAuditManager():
         """Get audit device inforamtion from local config file
 
         Arguments:
-            configs {list} -- audit devices
+            configs {dict} -- audit devices
 
         Returns:
-            list -- audit devices
+            dict -- audit devices
         """
         log.info("Loading audit devices from local config...")
         audit_devices = []
@@ -733,9 +663,8 @@ class VaultAuditManager():
             for audit_device in configs:
                 config = None
                 if 'config' in audit_device:
-                    if audit_device['config']:
-                        config = OrderedDict(
-                            sorted(audit_device["config"].items()))
+                    config = OrderedDict(
+                        sorted(audit_device["config"].items()))
 
                 audit_devices.append(
                     VaultAuditDevice(
@@ -755,8 +684,8 @@ class VaultAuditManager():
 
         Arguments:
             client {hvac} -- hvac client
-            remote_devices {list} -- audit devices from remote vault server
-            local_devices {list} -- audit devices from local vault config file
+            remote_devices {dict} -- audit devices from remote vault server
+            local_devices {dict} -- audit devices from local vault config file
         """
         log.info('Processing and configuring audit devices...')
 
@@ -768,11 +697,9 @@ class VaultAuditManager():
                 log.debug('Audit device "%s" at path "%s" is already enabled.',
                           audit_device.type, audit_device.path)
             else:
-                log.debug(
-                    'Audit device "%s" at path "%s" is not enabled. Enabling now...',
-                    audit_device.type,
-                    audit_device.path
-                )
+                log.debug('Audit device "%s" at path "%s" is not enabled. Enabling now...',
+                          audit_device.type,
+                          audit_device.path)
                 client.sys.enable_audit_device(
                     device_type=audit_device.type,
                     path=audit_device.path,
@@ -789,16 +716,14 @@ class VaultAuditManager():
 
         Arguments:
             client {hvac} -- hvac client
-            remote_devices {list} -- list of remote audit devices
-            local_devices {list} -- list of local audit devices
+            remote_devices {dict} -- dictionary of remote audit devices
+            local_devices {dict} -- dictionary of local audit devices
         """
         log.info('Cleaning up audit devices...')
         for audit_device in remote_devices:
             if audit_device not in local_devices:
                 log.info('Disabling audit device "%s" at path "%s"...',
                         audit_device.type, audit_device.path)
-                client.sys.disable_audit_device(
-                    path=audit_device.path
-                )
+                client.sys.disable_audit_device(audit_device.path)
 
         log.info('Finished cleaning up audit devices.')
