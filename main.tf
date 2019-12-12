@@ -34,7 +34,7 @@ locals {
   certificate_arn       = var.certificate_arn == null ? aws_acm_certificate.this[0].id : var.certificate_arn
   vault_url             = var.vault_url == null ? join(".", [var.name, var.domain_name]) : var.vault_url
 
-  pillar_template_vars = { for key, value in var.pillar_template_vars : key => jsonencode(value) }
+  template_vars = { for key, value in var.template_vars : key => jsonencode(value) }
 
   # Logs files to be streamed to CloudWatch Logs
   logs = [
@@ -98,7 +98,7 @@ resource "template_dir" "pillar" {
     region         = data.aws_region.current.name
     ssm_path       = local.ssm_root_path
     vault_version  = var.vault_version
-  }, local.pillar_template_vars)
+  }, local.template_vars)
 }
 
 data "archive_file" "pillar" {

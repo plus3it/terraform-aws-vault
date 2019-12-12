@@ -259,7 +259,18 @@ variable "tags" {
   default     = {}
 }
 
-variable "pillar_template_vars" {
+variable "template_vars" {
   description = "(Optional) List extra configurations to be referenced in the pillar"
   default     = {}
 }
+
+# variable "pillar_ssm_parameters_prefix" {
+#   description = "(Optional) Prefix of the SSM parameter store key."
+#   default     = ""
+#   type        = string
+# }
+
+# variable "pillar_ssm_parameters_keys" {
+#   description = "(Optional) List ssm parameter keys to be referenced in the pillar"
+#   default     = []
+# }

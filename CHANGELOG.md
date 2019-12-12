@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 * Changed `pillar_template_vars` to simplifies the inputs.
 * Added `extra_config` provisioner for AWS Auth method.
+* Addes support to read in and templating pillar files with ssm parameters from codebuild env
   
 ### 0.0.6
 

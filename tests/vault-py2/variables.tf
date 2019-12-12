@@ -80,11 +80,6 @@ variable "toggle_update" {
   description = "(Optional) Toggle that triggers a stack update by modifying the launch config, resulting in new instances; must be one of: A or B"
 }
 
-variable "pillar_template_vars" {
-  description = "(Optional) List extra configurations to be referenced in the pillar"
-  default     = {}
-}
-
 variable "scale_down_schedule" {
   type        = string
   description = "(Optional) Scheduled Action in cron-format (UTC) to scale down to MinCapacity; ignored if empty or ScaleUpSchedule is unset (E.g. \"0 0 * * *\")"
@@ -96,3 +91,9 @@ variable "scale_up_schedule" {
   description = "(Optional) Scheduled Action in cron-format (UTC) to scale up to MaxCapacity; ignored if empty or ScaleDownSchedule is unset (E.g. \"0 10 * * Mon-Fri\")"
   default     = null
 }
+
+variable "template_vars" {
+  description = "(Optional) List extra configurations to be referenced in the pillar"
+  default     = {}
+}
+

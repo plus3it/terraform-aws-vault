@@ -80,7 +80,7 @@ variable "ec2_extra_security_group_ids" {
   default     = []
 }
 
-variable "pillar_template_vars" {
+variable "template_vars" {
   description = "(Optional) List extra configurations to be referenced in the pillar"
   default     = {}
 }
