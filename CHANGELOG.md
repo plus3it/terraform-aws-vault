@@ -8,14 +8,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 **Commit Delta**: [Change from 0.0.6 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.6...0.0.7)
 
-**Released**: 2019.11.18
+**Released**: 2020.01.02
 
 **Summary**:
 
-* Changed `pillar_template_vars` to simplifies the inputs.
+* Changed `template_vars` to simplifies the inputs.
 * Added `extra_config` provisioner for AWS Auth method.
-* Addes support to read in and templating pillar files with ssm parameters from codebuild env
-  
+
 ### 0.0.6
 
 **Commit Delta**: [Change from 0.0.5 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.5...0.0.6)

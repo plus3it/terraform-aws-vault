@@ -159,13 +159,13 @@ variable "desired_capacity" {
 
 variable "scale_down_schedule" {
   type        = string
-  description = "(Optional) Scheduled Action in cron-format (UTC) to scale down to MinCapacity; ignored if empty or ScaleUpSchedule is unset (E.g. \"0 0 * * *\")"
+  description = "(Optional) Scheduled Action in cron-format (UTC) to scale down to MinCapacity; ignored if empty or ScaleUpSchedule is unset (E.g. '0 0 * * *')"
   default     = null
 }
 
 variable "scale_up_schedule" {
   type        = string
-  description = "(Optional) Scheduled Action in cron-format (UTC) to scale up to MaxCapacity; ignored if empty or ScaleDownSchedule is unset (E.g. \"0 10 * * Mon-Fri\")"
+  description = "(Optional) Scheduled Action in cron-format (UTC) to scale up to MaxCapacity; ignored if empty or ScaleDownSchedule is unset (E.g. '0 10 * * Mon-Fri')"
   default     = null
 }
 
@@ -263,14 +263,3 @@ variable "template_vars" {
   description = "(Optional) List extra configurations to be referenced in the pillar"
   default     = {}
 }
-
-# variable "pillar_ssm_parameters_prefix" {
-#   description = "(Optional) Prefix of the SSM parameter store key."
-#   default     = ""
-#   type        = string
-# }
-
-# variable "pillar_ssm_parameters_keys" {
-#   description = "(Optional) List ssm parameter keys to be referenced in the pillar"
-#   default     = []
-# }
