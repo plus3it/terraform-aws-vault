@@ -115,6 +115,17 @@ docs/lint: | tfdocs-awk/install guard/program/terraform-docs
 	@ bash -eu -o pipefail autodocs.sh -l
 	@ echo "[$@] Documentation linting complete!"
 
+python/lint: | guard/program/black
+	@ echo "[$@]: Linting Python files..."
+	black --check .
+	@ echo "[$@]: Python files PASSED lint test!"
+
+python/format: | guard/program/black
+	@ echo "[$@]: Formatting Python files..."
+	black .
+	@ echo "[$@]: Successfully formatted Python files!"
+
+
 terratest/install: | guard/program/go
 	cd tests && go mod init terraform-aws-vault/tests
 	cd tests && go build ./...
