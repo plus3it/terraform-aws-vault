@@ -7,6 +7,27 @@ resource "random_id" "name" {
   prefix      = "tf-vault-"
 }
 
+locals {
+  override_json = <<-OVERRIDE
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+          "Action": [
+              "ec2:DescribeInstances",
+              "iam:GetInstanceProfile",
+              "iam:GetUser",
+              "iam:GetRole"
+          ],
+          "Effect": "Allow",
+          "Resource": "*",
+          "Sid": "VaultInstanceMetadataRead"
+      }
+    ]
+}
+OVERRIDE
+}
+
 module "base" {
   source = "../../"
 
@@ -38,6 +59,8 @@ module "base" {
   watchmaker_config = var.watchmaker_config
 
   toggle_update = var.toggle_update
+
+  override_json = local.override_json
 }
 
 output "cluster_url" {

@@ -263,3 +263,9 @@ variable "template_vars" {
   description = "(Optional) List extra configurations to be referenced in the pillar"
   default     = {}
 }
+
+variable "override_json" {
+  description = "(Optional) Override the current policy document"
+  type        = string
+  default     = ""
+}

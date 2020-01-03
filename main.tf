@@ -130,7 +130,8 @@ resource "aws_s3_bucket_policy" "this" {
 module "iam" {
   source = "./modules/iam"
 
-  role_name = local.role_name
+  role_name     = local.role_name
+  override_json = var.override_json
   policy_vars = {
     bucket_name    = aws_s3_bucket.this.id
     dynamodb_table = local.dynamodb_table

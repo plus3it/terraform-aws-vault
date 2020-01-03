@@ -8,12 +8,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 **Commit Delta**: [Change from 0.0.6 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.6...0.0.7)
 
-**Released**: 2020.01.02
+**Released**: 2020.01.03
 
 **Summary**:
 
 * Changed `template_vars` to simplifies the inputs.
 * Added `extra_config` provisioner for AWS Auth method.
+* Added `override_json` variable to allow policy override for certain use cases.
 
 ### 0.0.6
 

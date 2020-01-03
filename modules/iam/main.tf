@@ -25,6 +25,11 @@ data "template_file" "instance_policy" {
   )
 }
 
+data "aws_iam_policy_document" "instance_policy" {
+  source_json = data.template_file.instance_policy.rendered
+  override_json = var.override_json
+}
+
 data "aws_iam_policy_document" "instance_trust_policy" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -43,7 +48,7 @@ resource "aws_iam_role" "instance" {
 
 resource "aws_iam_role_policy" "instance" {
   name_prefix = "${var.role_name}_"
-  policy      = data.template_file.instance_policy.rendered
+  policy      = data.aws_iam_policy_document.instance_policy.json
   role        = aws_iam_role.instance.id
 }
 
