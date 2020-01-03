@@ -13,6 +13,7 @@ terraform {
 locals {
   vpc_id                = data.aws_subnet.lb[0].vpc_id
   bucket_name           = "${var.name}-${random_string.this.result}"
+  vault_url             = var.vault_url == null ? join(".", [var.name, var.domain_name]) : var.vault_url
   archive_file_name     = "salt.zip"
   configs_file_name     = "configs.zip"
   appscript_file_name   = "appscript.sh"
@@ -31,8 +32,7 @@ locals {
   role_name             = join("-", [upper(var.name), "INSTANCE", data.aws_caller_identity.current.account_id])
   dynamodb_table        = var.dynamodb_table == null ? aws_dynamodb_table.this[0].id : var.dynamodb_table
   kms_key_id            = var.kms_key_id == null ? aws_kms_key.this[0].id : var.kms_key_id
-  certificate_arn       = var.certificate_arn == null ? aws_acm_certificate.this[0].id : var.certificate_arn
-  vault_url             = var.vault_url == null ? join(".", [var.name, var.domain_name]) : var.vault_url
+  certificate_arn       = var.certificate_arn == null ? module.certificate.acm_certificate_validation[local.vault_url].certificate_arn : var.certificate_arn
 
   template_vars = { for key, value in var.template_vars : key => jsonencode(value) }
 
@@ -207,34 +207,22 @@ resource "aws_route53_record" "this" {
 }
 
 # Manage certificate
-resource "aws_acm_certificate" "this" {
-  count = var.certificate_arn == null ? 1 : 0
-
-  domain_name       = local.vault_url
-  validation_method = "DNS"
-
-  tags = local.tags
-
-  lifecycle {
-    create_before_destroy = true
-  }
+data "aws_route53_zone" "this" {
+  name         = var.domain_name
+  private_zone = false
 }
 
-resource "aws_route53_record" "cert_validation" {
-  count = var.certificate_arn == null ? 1 : 0
+module "certificate" {
+  source = "git::https://github.com/plus3it/terraform-aws-tardigrade-acm.git?ref=0.0.0"
 
-  name    = aws_acm_certificate.this[0].domain_validation_options[0].resource_record_name
-  type    = aws_acm_certificate.this[0].domain_validation_options[0].resource_record_type
-  zone_id = var.route53_zone_id
-  records = aws_acm_certificate.this[*].domain_validation_options[0].resource_record_value
-  ttl     = 60
-}
+  create_acm_certificate = var.certificate_arn == null
 
-resource "aws_acm_certificate_validation" "this" {
-  count = var.certificate_arn == null ? 1 : 0
+  domain_name = local.vault_url
+  zone_id     = data.aws_route53_zone.this.zone_id
 
-  certificate_arn         = aws_acm_certificate.this[0].arn
-  validation_record_fqdns = aws_route53_record.cert_validation[*].fqdn
+  subject_alternative_names = [
+    "*.${local.vault_url}"
+  ]
 }
 
 # Manage load balancer

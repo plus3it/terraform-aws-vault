@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+### 0.0.8
+
+**Commit Delta**: [Change from 0.0.6 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.7...0.0.8)
+
+**Released**: 2020.01.03
+
+**Summary**:
+
+* Updated to use `terraform-aws-tardigrade-acm` module for handling certificate validation.
+
 ### 0.0.7
 
 **Commit Delta**: [Change from 0.0.6 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.6...0.0.7)

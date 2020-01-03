@@ -8,6 +8,7 @@ resource "random_id" "name" {
 }
 
 locals {
+  random_string = length(data.terraform_remote_state.prereq.outputs) > 0 ? data.terraform_remote_state.prereq.outputs.random_string.result : ""
   override_json = <<-OVERRIDE
 {
     "Version": "2012-10-17",
@@ -28,6 +29,13 @@ locals {
 OVERRIDE
 }
 
+data "terraform_remote_state" "prereq" {
+  backend = "local"
+  config = {
+    path = "prereq/terraform.tfstate"
+  }
+}
+
 module "vault-py3" {
   source = "../../"
 
@@ -35,7 +43,7 @@ module "vault-py3" {
   desired_capacity = 1
   ami_owners       = var.ami_owners
 
-  name           = "${random_id.name.hex}-py3"
+  name           = "tf-vault-${local.random_string}-py3"
   key_pair_name  = var.key_pair_name
   kms_key_id     = null
   ec2_subnet_ids = var.ec2_subnet_ids
