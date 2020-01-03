@@ -80,9 +80,9 @@ variable "ec2_extra_security_group_ids" {
   default     = []
 }
 
-variable "vault_pillar_extra_config" {
+variable "template_vars" {
   description = "(Optional) List extra configurations to be referenced in the pillar"
-  default     = []
+  default     = {}
 }
 
 variable "scale_down_schedule" {

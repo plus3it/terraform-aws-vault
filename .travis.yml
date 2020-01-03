@@ -24,6 +24,12 @@ jobs:
       name: JSON Lint/Format Verification
       script: make json/lint
     - stage: lint
+      language: python
+      python: 3.6
+      name: Python Lint/Format Verification
+      install: pip install -r requirements/dev.txt
+      script: make python/lint
+    - stage: lint
       name: Terraform Lint/Format Verification
       install:
         - make terraform/install

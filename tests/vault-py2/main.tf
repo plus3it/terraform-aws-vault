@@ -7,6 +7,27 @@ resource "random_id" "name" {
   prefix      = "tf-vault-"
 }
 
+locals {
+  override_json = <<-OVERRIDE
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+          "Action": [
+              "ec2:DescribeInstances",
+              "iam:GetInstanceProfile",
+              "iam:GetUser",
+              "iam:GetRole"
+          ],
+          "Effect": "Allow",
+          "Resource": "*",
+          "Sid": "VaultInstanceMetadataRead"
+      }
+    ]
+}
+OVERRIDE
+}
+
 module "base" {
   source = "../../"
 
@@ -30,16 +51,16 @@ module "base" {
   scale_down_schedule = var.scale_down_schedule
 
   # Vault settings
-  vault_version             = var.vault_version
-  vault_pillar_path         = var.vault_pillar_path
-  dynamodb_table            = var.dynamodb_table
-  vault_pillar_extra_config = var.vault_pillar_extra_config
-
-
+  vault_version     = var.vault_version
+  vault_pillar_path = var.vault_pillar_path
+  dynamodb_table    = var.dynamodb_table
+  template_vars     = var.template_vars
   # Watchmaker settings
   watchmaker_config = var.watchmaker_config
 
   toggle_update = var.toggle_update
+
+  override_json = local.override_json
 }
 
 output "cluster_url" {

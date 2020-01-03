@@ -11,19 +11,20 @@ IMPORT_ERROR = ""
 try:
     import hvac
     import boto3
+
     DEPS_INSTALLED = True
 except ImportError as e:
     IMPORT_ERROR = e
     pass
 
-__all__ = ['initialize']
+__all__ = ["initialize"]
 
 
 def __virtual__():
     if DEPS_INSTALLED:
-        return 'vault'
+        return "vault"
     else:
-        return False, 'Missing required dependency. {}'.format(IMPORT_ERROR)
+        return False, "Missing required dependency. {}".format(IMPORT_ERROR)
 
 
 def initialized(name, ssm_path, recovery_shares=5, recovery_threshold=3):
@@ -41,59 +42,56 @@ def initialized(name, ssm_path, recovery_shares=5, recovery_threshold=3):
     Returns:
         ret {dict} --  Result of the execution
     """
-    ret = {'name': name,
-          'comment': '',
-          'result': '',
-          'changes': {}}
+    ret = {"name": name, "comment": "", "result": "", "changes": {}}
 
-    client = __utils__['vault.build_client']()
+    client = __utils__["vault.build_client"]()
 
     is_initialized = client.sys.is_initialized()
 
     if is_initialized:
-        ret['result'] = True
-        ret['comment'] = 'Vault is already initialized'
+        ret["result"] = True
+        ret["comment"] = "Vault is already initialized"
     else:
         result = client.sys.initialize(
-            recovery_shares=recovery_shares,
-            recovery_threshold=recovery_threshold
+            recovery_shares=recovery_shares, recovery_threshold=recovery_threshold
         )
-        root_token = result['root_token']
-        recovery_keys = result['recovery_keys']
+        root_token = result["root_token"]
+        recovery_keys = result["recovery_keys"]
         is_success = client.sys.is_initialized()
 
-        ret['result'] = is_success
-        ret['changes'] = {
-            'root_credentials': {
-                'new': {
-                    'recover_keys': '/{}/{}'.format(ssm_path, 'recovery_keys'),
-                    'root_token': '/{}/{}'.format(ssm_path, 'root_token')
+        ret["result"] = is_success
+        ret["changes"] = {
+            "root_credentials": {
+                "new": {
+                    "recover_keys": "/{}/{}".format(ssm_path, "recovery_keys"),
+                    "root_token": "/{}/{}".format(ssm_path, "root_token"),
                 },
-                'old': {}
+                "old": {},
             }
         }
 
         # upload root token ssm parameter store
         if is_success:
-            ssm_client = boto3.client('ssm')
+            ssm_client = boto3.client("ssm")
             # saving root token
             ssm_client.put_parameter(
-                Name='/{}/{}'.format(ssm_path, 'root_token'),
+                Name="/{}/{}".format(ssm_path, "root_token"),
                 Value=root_token,
                 Type="SecureString",
-                Overwrite=True
+                Overwrite=True,
             )
 
             # saving recovery keys
             ssm_client.put_parameter(
-                Name='/{}/{}'.format(ssm_path, 'recovery_keys'),
+                Name="/{}/{}".format(ssm_path, "recovery_keys"),
                 Value=json.dumps(recovery_keys),
                 Type="SecureString",
-                Overwrite=True
+                Overwrite=True,
             )
 
-        ret['comment'] = 'Vault has {}initialized'.format(
-            '' if is_success else 'failed to be ')
+        ret["comment"] = "Vault has {}initialized".format(
+            "" if is_success else "failed to be "
+        )
     return ret
 
 
@@ -110,44 +108,35 @@ def secret_engines_synced(name, configs=[]):
         ret {dict} --  Result of the execution
     """
 
-    client = __utils__['vault.build_client']()
+    client = __utils__["vault.build_client"]()
     remote_secret_engines = []
     local_secret_engines = []
-    ret = {
-        'name': name,
-        'comment': '',
-        'result': '',
-        'changes': {}
-    }
+    ret = {"name": name, "comment": "", "result": "", "changes": {}}
 
-    secretsManager = __salt__['vault.get_secret_engines_manager']()
+    secretsManager = __salt__["vault.get_secret_engines_manager"]()
 
     try:
-        existing_secret_engines = client.sys.list_mounted_secrets_engines()[
-            'data']
+        existing_secret_engines = client.sys.list_mounted_secrets_engines()["data"]
 
         remote_secret_engines = secretsManager.populate_remote_secrets_engines(
-            existing_secret_engines)
+            existing_secret_engines
+        )
 
-        local_secret_engines = secretsManager.populate_local_secrets_engines(
-            configs)
+        local_secret_engines = secretsManager.populate_local_secrets_engines(configs)
 
         secretsManager.configure_secrets_engines(
-            client,
-            remote_secret_engines,
-            local_secret_engines
+            client, remote_secret_engines, local_secret_engines
         )
 
         secretsManager.cleanup_secrets_engines(
-            client,
-            remote_secret_engines,
-            local_secret_engines
+            client, remote_secret_engines, local_secret_engines
         )
-        ret['changes'] = salt.utils.dictdiffer.deep_diff(
-            existing_secret_engines, client.sys.list_mounted_secrets_engines()['data'])
-        ret['result'] = True
+        ret["changes"] = salt.utils.dictdiffer.deep_diff(
+            existing_secret_engines, client.sys.list_mounted_secrets_engines()["data"]
+        )
+        ret["result"] = True
     except Exception as e:
-        ret['result'] = False
+        ret["result"] = False
         log.exception(e)
 
     return ret
@@ -166,42 +155,34 @@ def auth_methods_synced(name, configs=[]):
         ret {dict} --  Result of the execution
     """
 
-    client = __utils__['vault.build_client']()
+    client = __utils__["vault.build_client"]()
     remote_auth_methods = []
     local_auth_methods = []
-    ret = {
-        'name': name,
-        'comment': '',
-        'result': '',
-        'changes': {}
-    }
+    ret = {"name": name, "comment": "", "result": "", "changes": {}}
 
-    authsManager = __salt__['vault.get_auth_methods_manager']()
+    authsManager = __salt__["vault.get_auth_methods_manager"]()
 
     try:
-        existing_auth_methods = client.sys.list_auth_methods()['data']
+        existing_auth_methods = client.sys.list_auth_methods()["data"]
         remote_auth_methods = authsManager.populate_remote_auth_methods(
-            existing_auth_methods)
-        local_auth_methods = authsManager.populate_local_auth_methods(
-            configs)
+            existing_auth_methods
+        )
+        local_auth_methods = authsManager.populate_local_auth_methods(configs)
 
         authsManager.configure_auth_methods(
-            client,
-            remote_auth_methods,
-            local_auth_methods
+            client, remote_auth_methods, local_auth_methods
         )
 
         authsManager.cleanup_auth_methods(
-            client,
-            remote_auth_methods,
-            local_auth_methods
+            client, remote_auth_methods, local_auth_methods
         )
 
-        ret['changes'] = salt.utils.dictdiffer.deep_diff(
-            existing_auth_methods, client.sys.list_auth_methods()['data'])
-        ret['result'] = True
+        ret["changes"] = salt.utils.dictdiffer.deep_diff(
+            existing_auth_methods, client.sys.list_auth_methods()["data"]
+        )
+        ret["result"] = True
     except Exception as e:
-        ret['result'] = False
+        ret["result"] = False
         log.exception(e)
 
     return ret
@@ -219,37 +200,31 @@ def policies_synced(name, policies=[]):
         ret {dict} --  Result of the execution
     """
 
-    client = __utils__['vault.build_client']()
+    client = __utils__["vault.build_client"]()
     remote_policies = []
-    ret = {
-        'name': name,
-        'comment': '',
-        'result': '',
-        'changes': {}
-    }
+    ret = {"name": name, "comment": "", "result": "", "changes": {}}
 
-    policiesManager = __salt__['vault.get_policies_manager']()
+    policiesManager = __salt__["vault.get_policies_manager"]()
 
     try:
 
-        existing_policies = client.sys.list_policies()['data']
+        existing_policies = client.sys.list_policies()["data"]
         remote_policies = []
 
-        for policy in existing_policies['policies']:
-            if not (policy == 'root' or policy == 'default'):
+        for policy in existing_policies["policies"]:
+            if not (policy == "root" or policy == "default"):
                 remote_policies.append(policy)
 
-        policiesManager.push_policies(
-            client, remote_policies, policies)
+        policiesManager.push_policies(client, remote_policies, policies)
 
-        policiesManager.cleanup_policies(
-            client, remote_policies, policies)
+        policiesManager.cleanup_policies(client, remote_policies, policies)
 
-        ret['changes'] = salt.utils.dictdiffer.deep_diff(
-            existing_policies, client.sys.list_policies()['data'])
-        ret['result'] = True
+        ret["changes"] = salt.utils.dictdiffer.deep_diff(
+            existing_policies, client.sys.list_policies()["data"]
+        )
+        ret["result"] = True
     except Exception as e:
-        ret['result'] = False
+        ret["result"] = False
         log.exception(e)
     return ret
 
@@ -266,39 +241,36 @@ def audit_devices_synced(name, configs=[]):
         ret {dict} --  Result of the execution
     """
 
-    client = __utils__['vault.build_client']()
+    client = __utils__["vault.build_client"]()
     remote_audit_devices = []
     local_audit_devices = []
-    ret = {
-        'name': name,
-        'comment': '',
-        'result': '',
-        'changes': {}
-    }
+    ret = {"name": name, "comment": "", "result": "", "changes": {}}
 
-    auditDevicesManager = __salt__['vault.get_audit_device_manager']()
+    auditDevicesManager = __salt__["vault.get_audit_device_manager"]()
     try:
-        existing_audit_devices = client.sys.list_enabled_audit_devices()[
-            'data']
+        existing_audit_devices = client.sys.list_enabled_audit_devices()["data"]
 
         remote_audit_devices = auditDevicesManager.populate_remote_audit_devices(
-            existing_audit_devices)
+            existing_audit_devices
+        )
 
-        log.debug('remote audit devices, {}'.format(remote_audit_devices))
+        log.debug("remote audit devices, {}".format(remote_audit_devices))
 
-        local_audit_devices = auditDevicesManager.get_local_audit_devices(
-            configs)
+        local_audit_devices = auditDevicesManager.get_local_audit_devices(configs)
 
         auditDevicesManager.configure_audit_devices(
-            client, remote_audit_devices, local_audit_devices)
+            client, remote_audit_devices, local_audit_devices
+        )
 
         auditDevicesManager.cleanup_audit_devices(
-            client, remote_audit_devices, local_audit_devices)
+            client, remote_audit_devices, local_audit_devices
+        )
 
-        ret['changes'] = salt.utils.dictdiffer.deep_diff(
-            existing_audit_devices, client.sys.list_enabled_audit_devices()['data'])
-        ret['result'] = True
+        ret["changes"] = salt.utils.dictdiffer.deep_diff(
+            existing_audit_devices, client.sys.list_enabled_audit_devices()["data"]
+        )
+        ret["result"] = True
     except Exception as e:
-        ret['result'] = False
+        ret["result"] = False
         log.exception(e)
     return ret

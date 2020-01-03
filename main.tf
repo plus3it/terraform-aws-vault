@@ -34,9 +34,8 @@ locals {
   certificate_arn       = var.certificate_arn == null ? aws_acm_certificate.this[0].id : var.certificate_arn
   vault_url             = var.vault_url == null ? join(".", [var.name, var.domain_name]) : var.vault_url
 
-  pillar_extra_config = {
-    for item in var.vault_pillar_extra_config : join("_", [item.type, item.name, "config"]) => jsonencode(item.config)
-  }
+  template_vars = { for key, value in var.template_vars : key => jsonencode(value) }
+
   # Logs files to be streamed to CloudWatch Logs
   logs = [
     "${local.logs_path}.log",
@@ -99,7 +98,7 @@ resource "template_dir" "pillar" {
     region         = data.aws_region.current.name
     ssm_path       = local.ssm_root_path
     vault_version  = var.vault_version
-  }, local.pillar_extra_config)
+  }, local.template_vars)
 }
 
 data "archive_file" "pillar" {
@@ -131,7 +130,8 @@ resource "aws_s3_bucket_policy" "this" {
 module "iam" {
   source = "./modules/iam"
 
-  role_name = local.role_name
+  role_name     = local.role_name
+  override_json = var.override_json
   policy_vars = {
     bucket_name    = aws_s3_bucket.this.id
     dynamodb_table = local.dynamodb_table

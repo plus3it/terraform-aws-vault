@@ -25,14 +25,16 @@ vault:
           default_lease_ttl: 1800
           max_lease_ttl: 1800
         secret_config: ${secrets_ad_config}
+        extra_config: ${secrets_ad_extra_config}
 
     auth_methods:
-      - type: token
-        path: token
-        description: token based credentials
+      - type: aws
+        path: aws #path will be auth/aws
+        description: Authenticate AWS Instances
         config:
-          default_lease_ttl: 0
-          max_lease_ttl: 0
+          default_lease_ttl: 1800
+          max_lease_ttl: 1800
+        extra_config: ${auth_aws_extra_config}
       - type: ldap
         path: ldap
         description: LDAP Auth
@@ -40,10 +42,7 @@ vault:
           default_lease_ttl: 1800
           max_lease_ttl: 1800
         auth_config: ${auth_ldap_config}
-        extra_config:
-          group_policy_map:
-            acb_admin:
-              - admin
+        extra_config: ${auth_ldap_extra_config}
 
     audit_devices:
       - type: file
@@ -54,26 +53,33 @@ vault:
 
     policies:
       # Following example of vault policy from https://learn.hashicorp.com/vault/identity-access-management/iam-policies
-      - name: admin
-        content:
-          path:
-            # Manage ad secret engines broadly across Vault
-            'ad/*': {capabilities: [create, read, update, delete, list, sudo]}
-            # Manage auth methods broadly across Vault
-            'auth/*': {capabilities: [create, read, update, delete, list, sudo]}
-            # List, create, update, and delete key/value secrets
-            'secret/*':  {capabilities: [create, read, update, delete, list, sudo]}
-            # Manage secret engines
-            'secret/mounts/*':  {capabilities: [create, read, update, delete, list, sudo]}
-            # Create, update, and delete auth methods
-            'sys/auth/*':  {capabilities: [create, update, delete, sudo]}
-            # List auth methods
-            'sys/auth':  {capabilities: [read]}
-            # List existing policies
-            'sys/policies/acl':  {capabilities: [list]}
-            # Create and manage ACL policies
-            'sys/policies/acl/*':  {capabilities: [create, read, update, delete, list, sudo]}
-            # List existing secret engines.
-            'sys/mounts':  {capabilities: [read]}
-            # Read health check
-            'sys/health':  {capabilities: [read, sudo]}
+      admin:
+        path:
+          # Manage ad secret engines broadly across Vault
+          'ad/*': {capabilities: [create, read, update, delete, list, sudo]}
+          # Manage auth methods broadly across Vault
+          'auth/*': {capabilities: [create, read, update, delete, list, sudo]}
+          # List, create, update, and delete key/value secrets
+          'secret/*':  {capabilities: [create, read, update, delete, list, sudo]}
+          # Manage secret engines
+          'secret/mounts/*':  {capabilities: [create, read, update, delete, list, sudo]}
+          # Create, update, and delete auth methods
+          'sys/auth/*':  {capabilities: [create, update, delete, sudo]}
+          # List auth methods
+          'sys/auth':  {capabilities: [read]}
+          # List existing policies
+          'sys/policies/acl':  {capabilities: [list]}
+          # Create and manage ACL policies
+          'sys/policies/acl/*':  {capabilities: [create, read, update, delete, list, sudo]}
+          # List existing secret engines.
+          'sys/mounts':  {capabilities: [read]}
+          # Read health check
+          'sys/health':  {capabilities: [read, sudo]}
+      watchmaker:
+        path:
+          # Manage ad secret engines broadly across Vault
+          'ad/creds/join-domain-role': {capabilities: [create, read, update, delete, list, sudo]}
+      ad_auto_rotate_pwd_read:
+        path:
+          # Manage ad secret engines broadly across Vault
+          'ad/creds/svc_vault_test': {capabilities: [read]}

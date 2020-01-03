@@ -5,109 +5,109 @@
 
 variable "name" {
   type        = string
-  description = "Name of the vault stack, will be use to prefix resources"
+  description = "(Required) Name of the vault stack, will be use to prefix resources"
 }
 
 variable "environment" {
   type        = string
-  description = "Type of environment -- must be one of: dev, test, prod"
+  description = "(Required) Type of environment -- must be one of: dev, test, prod"
 }
 
 variable "key_pair_name" {
   type        = string
-  description = "Keypair to associate to launched instances"
+  description = "(Required) Keypair to associate to launched instances"
 }
 
 variable "ami_owners" {
   type        = list(string)
-  description = "Account id/alias of the AMI owners"
+  description = "(Required) Account id/alias of the AMI owners"
 }
 
 variable "ec2_extra_security_group_ids" {
   type        = list(string)
-  description = "List of additional security groups to add to EC2 instances"
+  description = "(Required) List of additional security groups to add to EC2 instances"
   default     = []
 }
 
 variable "ec2_subnet_ids" {
   type        = list(string)
-  description = "List of subnets where EC2 instances will be launched"
+  description = "(Required) List of subnets where EC2 instances will be launched"
 }
 
 variable "lb_subnet_ids" {
   type        = list(string)
-  description = "List of subnets to associate to the Load Balancer"
+  description = "(Required) List of subnets to associate to the Load Balancer"
 }
 
 variable "vault_version" {
   type        = string
-  description = "Version of Vault to be installed on servers"
+  description = "(Required) Version of Vault to be installed on servers"
 }
 
 variable "vault_pillar_path" {
   type        = string
-  description = "Specify the path to vault pillar"
-}
-
-variable "vault_url" {
-  type        = string
-  description = "The DNS address that vault will be accessible at. Stack name will be used as the url when value is set to empty. Example: vault.domain.net"
-  default     = null
+  description = "(Required) Specify the path to vault pillar"
 }
 
 variable "domain_name" {
   type        = string
-  description = "The domain name where vault url will be registered to. Example: domain.net"
+  description = "(Required) The domain name where vault url will be registered to. Example: domain.net"
 }
 
 variable "route53_zone_id" {
   type        = string
-  description = "Hosted zone ID Route 53 hosted zone"
+  description = "(Required) Hosted zone ID Route 53 hosted zone"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
 # OPTIONAL PARAMETERS
 # These parameters have reasonable defaults.
 # ---------------------------------------------------------------------------------------------------------------------
+variable "vault_url" {
+  type        = string
+  description = "(Optional) The DNS address that vault will be accessible at. Stack name will be used as the url when value is set to empty. Example: vault.domain.net"
+  default     = null
+}
+
 variable "kms_key_id" {
   type        = string
-  description = "Id of an AWS KMS key use for auto unseal operation when vault is intialize"
+  description = "(Optional) Id of an AWS KMS key use for auto unseal operation when vault is intialize"
   default     = null
 }
 
 variable "dynamodb_table" {
   type        = string
-  description = "Name of the Dynamodb to be used as storage backend for Vault"
+  description = "(Optional) Name of the Dynamodb to be used as storage backend for Vault"
   default     = null
 }
 
 variable "ami_name_filters" {
   type        = list(string)
-  description = "Will be use to filter out AMI"
+  description = "(Optional) Will be use to filter out AMI"
   default     = ["spel-minimal-centos-7-hvm-*.x86_64-gp2"]
 }
 
 variable "ami_name_regex" {
   type        = string
-  description = "Regex to help fine-grain filtering AMI"
+  description = "(Optional) Regex to help fine-grain filtering AMI"
   default     = "spel-minimal-centos-7-hvm-\\d{4}\\.\\d{2}\\.\\d{1}\\.x86_64-gp2"
 }
 
 variable "instance_type" {
   type        = string
-  description = "Amazon EC2 instance type"
+  description = "(Optional) Amazon EC2 instance type"
   default     = "t2.medium"
 }
 
 variable "lb_internal" {
   type        = bool
-  description = "Boolean indicating whether the load balancer is internal or external"
+  description = "(Optional) Boolean indicating whether the load balancer is internal or external"
   default     = true
 }
 
 variable "certificate_arn" {
   type        = string
-  description = "The ARN of the default SSL server certificate to be use for HTTPS lb listener."
+  description = "(Optional) The ARN of the default SSL server certificate to be use for HTTPS lb listener."
   default     = null
 }
 
@@ -125,17 +125,17 @@ variable "ingress_cidr_blocks" {
 
 variable "lb_ssl_policy" {
   type        = string
-  description = "The name of the SSL Policy for the listener"
+  description = "(Optional) The name of the SSL Policy for the listener"
   default     = "ELBSecurityPolicy-FS-2018-06"
 }
 
 variable "api_port" {
-  description = "The port to use for Vault API calls"
+  description = "(Optional) The port to use for Vault API calls"
   default     = 8200
 }
 
 variable "cluster_port" {
-  description = "The port to use for Vault server-to-server communication."
+  description = "(Optional) The port to use for Vault server-to-server communication."
   default     = 8201
 }
 
@@ -159,13 +159,13 @@ variable "desired_capacity" {
 
 variable "scale_down_schedule" {
   type        = string
-  description = "(Optional) Scheduled Action in cron-format (UTC) to scale down to MinCapacity; ignored if empty or ScaleUpSchedule is unset (E.g. \"0 0 * * *\")"
+  description = "(Optional) Scheduled Action in cron-format (UTC) to scale down to MinCapacity; ignored if empty or ScaleUpSchedule is unset (E.g. '0 0 * * *')"
   default     = null
 }
 
 variable "scale_up_schedule" {
   type        = string
-  description = "(Optional) Scheduled Action in cron-format (UTC) to scale up to MaxCapacity; ignored if empty or ScaleDownSchedule is unset (E.g. \"0 10 * * Mon-Fri\")"
+  description = "(Optional) Scheduled Action in cron-format (UTC) to scale up to MaxCapacity; ignored if empty or ScaleDownSchedule is unset (E.g. '0 10 * * Mon-Fri')"
   default     = null
 }
 
@@ -259,12 +259,13 @@ variable "tags" {
   default     = {}
 }
 
-variable "vault_pillar_extra_config" {
-  type = list(object({
-    name   = string
-    type   = string # this can be auth, secrets, policies, or audit
-    config = map(string)
-  }))
+variable "template_vars" {
   description = "(Optional) List extra configurations to be referenced in the pillar"
-  default     = []
+  default     = {}
+}
+
+variable "override_json" {
+  description = "(Optional) Override the current policy document"
+  type        = string
+  default     = ""
 }

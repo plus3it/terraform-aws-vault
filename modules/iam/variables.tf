@@ -13,6 +13,12 @@ variable "role_name" {
   type        = string
 }
 
+variable "override_json" {
+  description = "Override the current policy document."
+  type = string
+  default = ""
+}
+
 # ---------------------------------------------------------------------------------------------------------------------
 # OPTIONAL PARAMETERS
 # These parameters have reasonable defaults.
