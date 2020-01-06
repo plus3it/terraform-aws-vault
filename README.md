@@ -60,15 +60,15 @@ vault:
     # Input vars can be defined and provided to the module through the `terraform.auto.tfvar` file.
     # See `variables.var` file for more information on each variables.
     api_port:  ${api_port}
-  cluster_port:  ${cluster_port}
-  dynamodb_table:  ${dynamodb_table}
-  inbound_cidrs:  ${inbound_cidrs}
-  kms_key_id:  ${kms_key_id}
-  logs_path:  ${logs_path}
-  logs_dir:  ${logs_dir}
-  region:  ${region}
-  ssm_path:  ${ssm_path}
-  version:  ${vault_version}
+    cluster_port:  ${cluster_port}
+    dynamodb_table:  ${dynamodb_table}
+    inbound_cidrs:  ${inbound_cidrs}
+    kms_key_id:  ${kms_key_id}
+    logs_path:  ${logs_path}
+    logs_dir:  ${logs_dir}
+    region:  ${region}
+    ssm_path:  ${ssm_path}
+    version:  ${vault_version}
 
     secrets_engines:
       - type:  kv
@@ -78,36 +78,36 @@ vault:
           default_lease_ttl:  1800
           max_lease_ttl:  1800
         secret_config: ${secrets_kv_config}
-      # More secrets engines can be configure here
+      # Additional secrets engines can be configure here
+
+
     auth_methods:
       - type:  token
-      path:  token
-      description:  token based credentials
-      config:
-        default_lease_ttl:  0
-        max_lease_ttl:  0
-      auth_config: ${auth_token_config}
-    # More authentication methods can be configure here
-      audit_devices:
-        - type:  file
-          path:  file_log
-          description:  first audit device
-          config:
-          file_path:  /etc/vault/logs/audit.log
-    # More audit devices can be configure here
+        path:  token
+        description:  token based credentials
+        config:
+          default_lease_ttl:  0
+          max_lease_ttl:  0
+        auth_config: ${auth_token_config}
+      # Additional authentication methods can be configure here
+
+
+    audit_devices:
+      - type:  file
+        path:  file_log
+        description:  first audit device
+        config:
+        file_path:  /etc/vault/logs/audit.log
+      # Additional audit devices can be configure here
+
     policies:
       # Following example of vault policy from https://learn.hashicorp.com/vault/identity-access-management/iam-policies
-        - name:  admin
-          content:
-            path:
-              # Manage ad secret engines broadly across Vault
-              'ad/*': {capabilities: [create, read, update, delete, list, sudo]}
-              # List auth methods
-              'sys/auth': {capabilities: [read]}
-              # List existing secret engines.'
-              sys/mounts': {capabilities: [read]}
-              # Read health check
-              'sys/health': {capabilities: [read, sudo]}
+      admin:
+        path:
+          # Manage ad secret engines broadly across Vault
+          'ad/*': {capabilities: [create, read, update, delete, list, sudo]}
+          # Manage auth methods broadly across Vault
+          'auth/*': {capabilities: [create, read, update, delete, list, sudo]}
 ```
 > ***Note***: Additional configurations can be specified for authentication methods using the `auth_config` pillar item. This also applies for secrets engines. Specifying the configuration for a particular secrets engine under the `secret_config` pillar item of that secrets engine type.
 
@@ -116,21 +116,25 @@ In some use cases, passwords or sensitive information will need to be provided i
 Example:
 `terraform.auto.tfvar` file:
 ```terraform
-vault_pillar_extra_config = [
-  {
-    name =  "ldap"
-    type =  "auth"
-    config = {
-      user_dn =  "CN=Users,DC=ad,DC=example,DC=com"
-      group_dn =  "CN=Users,DC=ad,DC=example,DC=com"
-      url =  "ldaps://ad.example.com"
-      insecure_tls =  true
-      user_attr =  "cn"
-      group_attr =  "memberOf"
-      group_filter =  "{{ '(&(objectClass=person)(cn={{.Username}}))' | yaml }}"
+template_vars = {
+  auth_ldap_config = {
+    user_dn =  "CN=Users,DC=ad,DC=example,DC=com"
+    group_dn =  "CN=Users,DC=ad,DC=example,DC=com"
+    url =  "ldaps://ad.example.com"
+    insecure_tls =  true
+    user_attr =  "cn"
+    group_attr =  "memberOf"
+    group_filter =  "{{ '(&(objectClass=person)(cn={{.Username}}))' | yaml }}"
+  },
+  auth_ldap_extra_config = {
+    group_policy_map = {
+      acb_admin = {
+        name     = "administrator",
+        policies = ["admin"]
+      }
     }
   }
-]
+}
 ```
 `init.sls` pillar file:
 ```yaml 
@@ -141,10 +145,11 @@ auth_methods:
     config:
       default_lease_ttl:  1800
       max_lease_ttl:  1800
-    auth_config:  ${auth_ldap_config}
+    secret_config:  ${auth_ldap_config}
+    extra_config: ${auth_ldap_extra_config}
 ```
 
-> ***Note***: You can use the `${type_name_config}` pattern to reference the config specified in the `vault_pillar_extra_config` input var. 
+> ***Note***: You can use the `${type_name_config}` pattern to reference the config specified in the `template_vars` input var. 
 
 ## Vault Salt State Modules
 This module contains several custom salt state modules to help with syncronizing Vault's configurations. Base on the values defined in the `pillar`, these custom state modules will enable, disable, or tune the configurations of Vault's auth methods, secrets engines, audit devices, and policies. The custom state modules interact with the Vault API endpoints via Python 2.7/3.x Hashicorp Vault API Client ([`hvac`](https://hvac.readthedocs.io/)). See details for each custom state module below:
