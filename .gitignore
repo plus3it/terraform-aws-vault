@@ -20,7 +20,9 @@ vendor/
 go.mod
 go.sum
 
-
 #Vagrant related files
 .vagrant/
 .pillar/
+
+###DELETE###
+pillar/

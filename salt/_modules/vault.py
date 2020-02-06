@@ -358,18 +358,28 @@ class VaultAuthManager:
                     'Retrieving extra configuration from Vault for auth method "%s"...',
                     auth_method.type,
                 )
-                remote_extra_config = funcs[auth_method.type]["list"](auth_method.path)
 
-                if auth_method.type in ["ldap"]:
-                    remote_extra_config = remote_extra_config["data"]["keys"]
+                # get the list function for the specified auth module
+                remote_extra_function = funcs.get(auth_method.type, {}).get("list")
+
+                if remote_extra_function:
+                    remote_extra_config = remote_extra_function(auth_method.path)
+
+                    if auth_method.type in ["ldap"]:
+                        remote_extra_config = remote_extra_config["data"]["keys"]
+                    else:
+                        remote_extra_config = remote_extra_config["keys"]
+
+                    log.debug(
+                        'Provisioned extra configuration for auth method "%s": %s',
+                        auth_method.path,
+                        ",".join(remote_extra_config),
+                    )
                 else:
-                    remote_extra_config = remote_extra_config["keys"]
-
-                log.debug(
-                    'Provisioned extra configuration for auth method "%s": %s',
-                    auth_method.path,
-                    ",".join(remote_extra_config),
-                )
+                    log.debug(
+                        'No methods defined for to retrieve extra configuration for auth method "%s"...',
+                        auth_method.type,
+                    )
             except hvac.exceptions.InvalidPath:
                 pass
 
