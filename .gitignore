@@ -24,5 +24,12 @@ go.sum
 .vagrant/
 .pillar/
 
+# tardigrade-ci
+.tardigrade-ci
+tardigrade-ci/
+
+# eclint
+.git/
+
 ###DELETE###
 pillar/
