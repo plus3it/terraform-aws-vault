@@ -70,6 +70,58 @@ def get_audit_device_manager():
     return VaultAuditManager()
 
 
+def get_funcs_strategy(client, engine_type, engine, function):
+    """Retrieve a function to setup Auth/Secrets Vault engines
+
+    Arguments:
+        client {hvac} -- hvac client
+        engine_type {string} - The type of engine (e.g., auth, secrets, audit)
+        engine {string} - The mechanism within the engine to configure
+        function {string} - The method within the engine needed
+
+    Returns:
+        [function] - configuration function for Auth/Secrets Vault engines
+    """
+
+    funcs = {
+        "auth": {
+            "aws": {
+                "list": client.auth.aws.list_roles,
+                "create": client.auth.aws.create_role,
+                "delete": client.auth.aws.delete_role,
+                "configure": client.auth.aws.configure,
+                "key": "roles",
+            },
+            "ldap": {
+                "list": client.auth.ldap.list_groups,
+                "create": client.auth.ldap.create_or_update_group,
+                "delete": client.auth.ldap.delete_group,
+                "configure": client.auth.ldap.configure,
+                "key": "group_policy_map",
+            },
+        },
+        "secrets": {
+            "kv": {
+                "list": client.secrets.kv.list_secrets,
+                "configure": client.secrets.kv.configure,
+                "create": client.secrets.kv.create_or_update_secret,
+            },
+            "ad": {
+                "list": client.secrets.activedirectory.list_roles,
+                "create": client.secrets.activedirectory.create_or_update_role,
+                "delete": client.secrets.activedirectory.delete_role,
+                "configure": client.secrets.activedirectory.configure,
+            },
+            "database": {"configure": client.secrets.database.configure},
+        },
+    }
+
+    try:
+        return funcs[engine_type][engine][function]
+    except KeyError:
+        raise NotImplementedError("Functionality has not yet been implemented")
+
+
 class VaultConfigBase(object):
     type = None
     path = None
@@ -322,27 +374,13 @@ class VaultAuthManager:
                 log.debug('Auth method "%s" is enabled.', auth_method.type)
 
             remote_extra_config = []
-            funcs = {
-                "aws": {
-                    "list": client.auth.aws.list_roles,
-                    "create": client.auth.aws.create_role,
-                    "delete": client.auth.aws.delete_role,
-                    "configure": client.auth.aws.configure,
-                    "key": "roles",
-                },
-                "ldap": {
-                    "list": client.auth.ldap.list_groups,
-                    "create": client.auth.ldap.create_or_update_group,
-                    "delete": client.auth.ldap.delete_group,
-                    "configure": client.auth.ldap.configure,
-                    "key": "group_policy_map",
-                },
-            }
 
             # Provision config for specific auth method
             if auth_method.auth_config:
                 log.debug("Provisioning configuration for %s...", auth_method.type)
-                funcs[auth_method.type]["configure"](**auth_method.auth_config)
+                get_funcs_strategy(client, "auth", auth_method.type, "configure")(
+                    **auth_method.auth_config
+                )
                 log.debug("Configuration for %s is provisioned.", auth_method.type)
             else:
                 log.debug(
@@ -360,28 +398,27 @@ class VaultAuthManager:
                 )
 
                 # get the list function for the specified auth module
-                remote_extra_function = funcs.get(auth_method.type, {}).get("list")
+                remote_extra_config = get_funcs_strategy(
+                    client, "auth", auth_method.type, "list"
+                )(auth_method.path)
 
-                if remote_extra_function:
-                    remote_extra_config = remote_extra_function(auth_method.path)
-
-                    if auth_method.type in ["ldap"]:
-                        remote_extra_config = remote_extra_config["data"]["keys"]
-                    else:
-                        remote_extra_config = remote_extra_config["keys"]
-
-                    log.debug(
-                        'Provisioned extra configuration for auth method "%s": %s',
-                        auth_method.path,
-                        ",".join(remote_extra_config),
-                    )
+                if auth_method.type in ["ldap"]:
+                    remote_extra_config = remote_extra_config["data"]["keys"]
                 else:
-                    log.debug(
-                        'No methods defined for to retrieve extra configuration for auth method "%s"...',
-                        auth_method.type,
-                    )
+                    remote_extra_config = remote_extra_config["keys"]
+
+                log.debug(
+                    'Provisioned extra configuration for auth method "%s": %s',
+                    auth_method.path,
+                    ",".join(remote_extra_config),
+                )
             except hvac.exceptions.InvalidPath:
                 pass
+            except NotImplementedError:
+                log.debug(
+                    'No methods defined to retrieve extra configuration for auth method "%s"...',
+                    auth_method.type,
+                )
 
             # Provision extra config for specific auth method
             if auth_method.extra_config:
@@ -391,13 +428,15 @@ class VaultAuthManager:
                 )
                 # Update groups/roles mapping
                 for item, config in auth_method.extra_config[
-                    funcs[auth_method.type]["key"]
+                    get_funcs_strategy(client, "auth", auth_method.type, "key")
                 ].items():
                     log.debug('"%s" -> Config %s', str(item), config)
                     # adding moint_point to all config
                     config.update({"mount_point": auth_method.path})
                     # call api to update the config
-                    funcs[auth_method.type]["create"](**config)
+                    get_funcs_strategy(client, "auth", auth_method.type, "create")(
+                        **config
+                    )
 
                 log.debug(
                     "Finish provisioning extra configurations for "
@@ -421,7 +460,8 @@ class VaultAuthManager:
                     if (
                         item
                         in auth_method.extra_config.get(
-                            funcs[auth_method.type]["key"], {}
+                            get_funcs_strategy(client, "auth", auth_method.type, "key"),
+                            {},
                         ).keys()
                     ):
                         log.debug(
@@ -433,7 +473,9 @@ class VaultAuthManager:
                         log.debug(
                             '"%s" does not exist in configuration, ' "deleting...", item
                         )
-                        funcs[auth_method.type]["delete"](item, auth_method.path)
+                        get_funcs_strategy(client, "auth", auth_method.type, "delete")(
+                            item, auth_method.path
+                        )
                         log.debug('"%s" is deleted.', item)
                 log.debug(
                     'Finished cleaning up auth method "%s" extra configuration.',
@@ -585,21 +627,6 @@ class VaultSecretsManager:
                     secret_engine.path,
                 )
 
-            funcs = {
-                "kv": {
-                    "list": client.secrets.kv.list_secrets,
-                    "configure": client.secrets.kv.configure,
-                    "create": client.secrets.kv.create_or_update_secret,
-                },
-                "ad": {
-                    "list": client.secrets.activedirectory.list_roles,
-                    "create": client.secrets.activedirectory.create_or_update_role,
-                    "delete": client.secrets.activedirectory.delete_role,
-                    "configure": client.secrets.activedirectory.configure,
-                },
-                "database": {"configure": client.secrets.database.configure},
-            }
-
             baseConfig = {"mount_point": secret_engine.path}
 
             remote_extra_config = []
@@ -613,7 +640,9 @@ class VaultSecretsManager:
 
                 secret_engine.secret_config.update(baseConfig)
 
-                funcs[secret_engine.type]["configure"](**secret_engine.secret_config)
+                get_funcs_strategy(client, "secrets", secret_engine.type, "configure")(
+                    **secret_engine.secret_config
+                )
 
                 log.info(
                     "Finished provisioning specific configurations for "
@@ -628,9 +657,9 @@ class VaultSecretsManager:
                     'secrets engine "%s"...',
                     secret_engine.type,
                 )
-                remote_extra_config = funcs[secret_engine.type]["list"](
-                    secret_engine.path
-                )
+                remote_extra_config = get_funcs_strategy(
+                    client, "secrets", secret_engine.type, "list"
+                )(secret_engine.path)
                 log.debug(
                     "Provisioned extra configurations for " 'secrets engine "%s":',
                     remote_extra_config,
@@ -650,7 +679,9 @@ class VaultSecretsManager:
 
                     baseConfig.update({"name": role})
                     config.update(baseConfig)
-                    funcs[secret_engine.type]["create"](**config)
+                    get_funcs_strategy(client, "secrets", secret_engine.type, "create")(
+                        **config
+                    )
                 log.info(
                     "Finished provisioning extra configurations for "
                     ' secrets engine "%s"...',
@@ -679,7 +710,9 @@ class VaultSecretsManager:
                         '"%s" does not exists in pillar configuration ' "Deleting...",
                         item,
                     )
-                    funcs[secret_engine.type]["delete"](item, secret_engine.path)
+                    get_funcs_strategy(client, "secrets", secret_engine.type, "delete")(
+                        item, secret_engine.path
+                    )
                     log.debug('"%s" has been deleted.', item)
                 log.debug(
                     'Finished cleaning up secrets engine "%s" ' "extra configuration.",
