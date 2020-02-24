@@ -26,7 +26,7 @@ data "template_file" "instance_policy" {
 }
 
 data "aws_iam_policy_document" "instance_policy" {
-  source_json = data.template_file.instance_policy.rendered
+  source_json   = data.template_file.instance_policy.rendered
   override_json = var.override_json
 }
 

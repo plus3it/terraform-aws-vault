@@ -20,7 +20,15 @@ vendor/
 go.mod
 go.sum
 
-
 #Vagrant related files
 .vagrant/
 .pillar/
+
+# tardigrade-ci
+.tardigrade-ci
+tardigrade-ci/
+
+# eclint
+.git/
+
+pillar/

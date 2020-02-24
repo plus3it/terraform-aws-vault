@@ -15,8 +15,8 @@ variable "role_name" {
 
 variable "override_json" {
   description = "Override the current policy document."
-  type = string
-  default = ""
+  type        = string
+  default     = ""
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
