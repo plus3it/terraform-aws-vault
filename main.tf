@@ -26,7 +26,7 @@ locals {
   s3_salt_vault_content = "s3://${aws_s3_bucket.this.id}/${local.archive_file_name}"
   s3_pillar_url         = "s3://${aws_s3_bucket.this.id}/${local.pillar_file_name}"
   archive_path          = join("/", [path.module, ".files", local.archive_file_name])
-  pillar_path           = join("/", [path.cwd, ".files", local.pillar_file_name])
+  pillar_path           = join("/", [path.module, ".files", local.pillar_file_name])
   appscript_path        = join("/", [path.module, "scripts", local.appscript_file_name])
   ssm_root_path         = join("/", ["vault", var.environment, data.aws_caller_identity.current.account_id, var.name])
   role_name             = join("-", [upper(var.name), "INSTANCE", data.aws_caller_identity.current.account_id])
@@ -82,12 +82,13 @@ data "aws_subnet" "lb" {
   id = var.lb_subnet_ids[count.index]
 }
 
-# Manage vault pillar
-resource "template_dir" "pillar" {
-  source_dir      = var.vault_pillar_path
-  destination_dir = "${path.cwd}/.files/pillar"
+# Resorting to alernative means of creating the directory due to
+# https://github.com/gruntwork-io/terragrunt/issues/829
+resource "local_file" "pillar" {
+  for_each = fileset(var.vault_pillar_path, "[^.]*")
+  filename = "${path.module}/.files/pillar/${each.value}"
 
-  vars = merge({
+  content = templatefile("${var.vault_pillar_path}/${each.value}", merge({
     api_port       = var.api_port
     cluster_port   = var.cluster_port
     dynamodb_table = local.dynamodb_table
@@ -98,13 +99,34 @@ resource "template_dir" "pillar" {
     region         = data.aws_region.current.name
     ssm_path       = local.ssm_root_path
     vault_version  = var.vault_version
-  }, local.template_vars)
+  }, local.template_vars))
+}
+
+# Using a second local_file resource due to
+# https://github.com/hashicorp/terraform/issues/24220
+resource "local_file" "pillar_data" {
+  for_each = fileset("${var.vault_pillar_path}/vault", "[^.]*")
+  filename = "${path.module}/.files/pillar/vault/${each.value}"
+
+  content = templatefile("${var.vault_pillar_path}/vault/${each.value}", merge({
+    api_port       = var.api_port
+    cluster_port   = var.cluster_port
+    dynamodb_table = local.dynamodb_table
+    inbound_cidrs  = jsonencode(concat(var.inbound_cidrs, local.default_inbound_cdirs))
+    kms_key_id     = local.kms_key_id
+    logs_dir       = local.logs_dir
+    logs_path      = local.logs_path
+    region         = data.aws_region.current.name
+    ssm_path       = local.ssm_root_path
+    vault_version  = var.vault_version
+  }, local.template_vars))
 }
 
 data "archive_file" "pillar" {
   type        = "zip"
-  source_dir  = template_dir.pillar.destination_dir
+  source_dir  = "${path.module}/.files/pillar/"
   output_path = local.pillar_path
+  depends_on  = [local_file.pillar, local_file.pillar_data]
 }
 
 resource "aws_s3_bucket_object" "pillar" {
