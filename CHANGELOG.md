@@ -4,9 +4,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+### 0.0.10
+
+**Commit Delta**: [Change from 0.0.9 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.9...0.0.10)
+
+**Released**: 2020.02.26
+
+**Summary**:
+
+* Rework means of creating the pillar directory due to https://github.com/gruntwork-io/terragrunt/issues/829
+
+### 0.0.9
+
+**Commit Delta**: [Change from 0.0.8 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.8...0.0.9)
+
+**Released**: 2020.02.24
+
+**Summary**:
+
+* Allow any auth/secrets engine to be enabled but still limit configuration to engines implemented
+
 ### 0.0.8
 
-**Commit Delta**: [Change from 0.0.6 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.7...0.0.8)
+**Commit Delta**: [Change from 0.0.7 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.7...0.0.8)
 
 **Released**: 2020.01.03
 
@@ -36,7 +56,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 * Fixed bug [#10](https://github.com/plus3it/terraform-aws-vault/issues/10) addressing forward slashes are being removed from `path`.
 * Changed `changes` output for the the `synced` salt state modules.
-  
+
 ### 0.0.5
 
 **Commit Delta**: [Change from 0.0.4 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.4...0.0.5)
@@ -45,7 +65,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 **Summary**:
 
-* Added input vars `scale_up_schedule` and `scale_down_schedule` to control AutoScaling Group Scheduled Action option. 
+* Added input vars `scale_up_schedule` and `scale_down_schedule` to control AutoScaling Group Scheduled Action option.
 
 ### 0.0.4
 
@@ -80,7 +100,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * Added `yaml` filter to vault.sync salt state
 * Changed sample policies in the `pillar` for the test cases
 * Added pillar to the local dev Vagrant setup
-  
+
 ### 0.0.1
 
 **Commit Delta**: [Change from 0.0.0 release](https://github.com/plus3it/terraform-aws-vault/compare/0.0.0...0.0.1)
