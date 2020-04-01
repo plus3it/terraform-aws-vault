@@ -15,10 +15,3 @@ pull_request_rules:
     actions:
       merge:
         method: merge
-pull_request_rules:
-  - name: Automatic merge on approval
-    conditions:
-      - "#approved-reviews-by>=1"
-    actions:
-      merge:
-        method: merge
