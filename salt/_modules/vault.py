@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: skip-file
 """
 This module provides methods for interacting with Hashicorp Vault via the HVAC
 library.
@@ -207,12 +208,10 @@ class VaultAuditDevice(VaultConfigBase):
 
 
 class VaultPolicyManager:
-    """Module for handling Vault Policies
-    """
+    """Module for handling Vault Policies"""
 
     def __init__(self):
-        """Initialize Vault Policies Manager
-        """
+        """Initialize Vault Policies Manager"""
         log.info("Initializing Vault Policies Manager...")
 
     def push_policies(self, client, remote_policies, local_policies):
@@ -261,12 +260,10 @@ class VaultPolicyManager:
 
 
 class VaultAuthManager:
-    """Module for managing Vault Authentication Methods
-    """
+    """Module for managing Vault Authentication Methods"""
 
     def __init__(self):
-        """Initialize Authentication Manager
-        """
+        """Initialize Authentication Manager"""
         log.info("Initializing Vault Auth Manager...")
 
     def populate_remote_auth_methods(self, methods):
@@ -512,8 +509,7 @@ class VaultSecretsManager:
     """
 
     def __init__(self):
-        """Initialize Vault Secrets Manager
-        """
+        """Initialize Vault Secrets Manager"""
         log.info("Initializing Vault Secret Manager...")
 
     def populate_remote_secrets_engines(self, engines):
@@ -762,8 +758,7 @@ class VaultAuditManager:
     """
 
     def __init__(self):
-        """Initialize Vault Audit Managers
-        """
+        """Initialize Vault Audit Managers"""
         log.info("Initializing Vault Audit Manager...")
 
     def populate_remote_audit_devices(self, devices):
