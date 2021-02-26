@@ -219,7 +219,7 @@ sync_policies:
 | vault\_pillar\_path | (Required) Specify the path to vault pillar | `string` | n/a | yes |
 | vault\_version | (Required) Version of Vault to be installed on servers | `string` | n/a | yes |
 | ami\_name\_filters | (Optional) Will be use to filter out AMI | `list(string)` | <pre>[<br>  "spel-minimal-centos-7-hvm-*.x86_64-gp2"<br>]</pre> | no |
-| ami\_name\_regex | (Optional) Regex to help fine-grain filtering AMI | `string` | `"spel-minimal-centos-7-hvm-\\d{4}\\.\\d{2}\\.\\d{1}\\.x86_64-gp2"` | no |
+| ami\_name\_regex | (Optional) Regex to help fine-grain filtering AMI | `string` | `"spel-minimal-centos-7-hvm-\d{4}\.\d{2}\.\d{1}\.x86_64-gp2"` | no |
 | api\_port | (Optional) The port to use for Vault API calls | `number` | `8200` | no |
 | certificate\_arn | (Optional) The ARN of the default SSL server certificate to be use for HTTPS lb listener. | `string` | `null` | no |
 | cfn\_bootstrap\_utils\_url | (Optional) URL to aws-cfn-bootstrap-latest.tar.gz | `string` | `"https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz"` | no |
@@ -244,8 +244,8 @@ sync_policies:
 | override\_json | (Optional) Override the current policy document | `string` | `""` | no |
 | point\_in\_time\_recovery | (Optional) Enabling Amazon DynamoDB point-in-time recovery (PITR) provides automatic backups of your DynamoDB table data. | `bool` | `true` | no |
 | pypi\_index\_url | (Optional) URL to the PyPi Index | `string` | `"https://pypi.org/simple"` | no |
-| scale\_down\_schedule | (Optional) Scheduled Action in cron-format (UTC) to scale down to MinCapacity; ignored if empty or ScaleUpSchedule is unset (E.g. '0 0 \* \* \*') | `string` | `null` | no |
-| scale\_up\_schedule | (Optional) Scheduled Action in cron-format (UTC) to scale up to MaxCapacity; ignored if empty or ScaleDownSchedule is unset (E.g. '0 10 \* \* Mon-Fri') | `string` | `null` | no |
+| scale\_down\_schedule | (Optional) Scheduled Action in cron-format (UTC) to scale down to MinCapacity; ignored if empty or ScaleUpSchedule is unset (E.g. '0 0 * * *') | `string` | `null` | no |
+| scale\_up\_schedule | (Optional) Scheduled Action in cron-format (UTC) to scale up to MaxCapacity; ignored if empty or ScaleDownSchedule is unset (E.g. '0 10 * * Mon-Fri') | `string` | `null` | no |
 | tags | (Optional) List of tags to include with resource | `map(string)` | `{}` | no |
 | template\_vars | (Optional) List extra configurations to be referenced in the pillar | `map` | `{}` | no |
 | toggle\_update | (Optional) Toggle that triggers a stack update by modifying the launch config, resulting in new instances; must be one of: A or B | `string` | `"A"` | no |
