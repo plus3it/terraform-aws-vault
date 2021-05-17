@@ -235,7 +235,7 @@ data "aws_route53_zone" "this" {
 }
 
 module "certificate" {
-  source = "git::https://github.com/plus3it/terraform-aws-tardigrade-acm.git?ref=0.0.0"
+  source = "git::https://github.com/plus3it/terraform-aws-tardigrade-acm.git?ref=1.0.0"
 
   create_acm_certificate = var.certificate_arn == null
 
