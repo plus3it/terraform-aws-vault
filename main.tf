@@ -432,7 +432,7 @@ resource "aws_appautoscaling_policy" "this" {
 
 # Manage autoscaling group
 module "autoscaling_group" {
-  source = "git::https://github.com/plus3it/terraform-aws-watchmaker//modules/lx-autoscale?ref=2.0.0"
+  source = "git::https://github.com/plus3it/terraform-aws-watchmaker//modules/lx-autoscale?ref=2.1.1"
 
   Name            = var.name
   OnFailureAction = ""
