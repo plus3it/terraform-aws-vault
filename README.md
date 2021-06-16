@@ -192,73 +192,87 @@ sync_policies:
 
 | Name | Version |
 |------|---------|
-| terraform | >= 0.12 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 0.12 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| archive | n/a |
-| aws | n/a |
-| local | n/a |
-| random | n/a |
-| template | n/a |
+| <a name="provider_archive"></a> [archive](#provider\_archive) | n/a |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
+| <a name="provider_local"></a> [local](#provider\_local) | n/a |
+| <a name="provider_random"></a> [random](#provider\_random) | n/a |
+| <a name="provider_template"></a> [template](#provider\_template) | n/a |
+
+## Resources
+
+| Name | Type |
+|------|------|
+| [archive_file.pillar](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
+| [archive_file.salt](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
+| [aws_ami.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ami) | data source |
+| [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
+| [aws_partition.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/partition) | data source |
+| [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
+| [aws_route53_zone.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/route53_zone) | data source |
+| [aws_subnet.lb](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/subnet) | data source |
+| [template_file.appscript](https://registry.terraform.io/providers/hashicorp/template/latest/docs/data-sources/file) | data source |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| ami\_owners | (Required) Account id/alias of the AMI owners | `list(string)` | n/a | yes |
-| domain\_name | (Required) The domain name where vault url will be registered to. Example: domain.net | `string` | n/a | yes |
-| ec2\_subnet\_ids | (Required) List of subnets where EC2 instances will be launched | `list(string)` | n/a | yes |
-| environment | (Required) Type of environment -- must be one of: dev, test, prod | `string` | n/a | yes |
-| key\_pair\_name | (Required) Keypair to associate to launched instances | `string` | n/a | yes |
-| lb\_subnet\_ids | (Required) List of subnets to associate to the Load Balancer | `list(string)` | n/a | yes |
-| name | (Required) Name of the vault stack, will be use to prefix resources | `string` | n/a | yes |
-| route53\_zone\_id | (Required) Hosted zone ID Route 53 hosted zone | `string` | n/a | yes |
-| vault\_pillar\_path | (Required) Specify the path to vault pillar | `string` | n/a | yes |
-| vault\_version | (Required) Version of Vault to be installed on servers | `string` | n/a | yes |
-| ami\_name\_filters | (Optional) Will be use to filter out AMI | `list(string)` | <pre>[<br>  "spel-minimal-centos-7-hvm-*.x86_64-gp2"<br>]</pre> | no |
-| ami\_name\_regex | (Optional) Regex to help fine-grain filtering AMI | `string` | `"spel-minimal-centos-7-hvm-\d{4}\.\d{2}\.\d{1}\.x86_64-gp2"` | no |
-| api\_port | (Optional) The port to use for Vault API calls | `number` | `8200` | no |
-| certificate\_arn | (Optional) The ARN of the default SSL server certificate to be use for HTTPS lb listener. | `string` | `null` | no |
-| cfn\_bootstrap\_utils\_url | (Optional) URL to aws-cfn-bootstrap-latest.tar.gz | `string` | `"https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz"` | no |
-| cfn\_endpoint\_url | (Optional) URL to the CloudFormation Endpoint. e.g. https://cloudformation.us-east-1.amazonaws.com | `string` | `"https://cloudformation.us-east-1.amazonaws.com"` | no |
-| cloudwatch\_agent\_url | (Optional) S3 URL to CloudWatch Agent installer. Example: s3://amazoncloudwatch-agent/linux/amd64/latest/AmazonCloudWatchAgent.zip | `string` | `""` | no |
-| cluster\_port | (Optional) The port to use for Vault server-to-server communication. | `number` | `8201` | no |
-| desired\_capacity | (Optional) Desired number of instances in the Autoscaling Group | `string` | `"2"` | no |
-| dynamodb\_max\_read\_capacity | (Optional) The max capacity of the scalable target for DynamoDb table autoscaling. | `number` | `100` | no |
-| dynamodb\_min\_read\_capacity | (Optional) The min capacity of the scalable target for DynamoDb table autoscaling. | `number` | `5` | no |
-| dynamodb\_table | (Optional) Name of the Dynamodb to be used as storage backend for Vault | `string` | `null` | no |
-| dynamodb\_target\_value | (Optional) The target value for the metric of the scaling policy configuration. | `number` | `70` | no |
-| ec2\_extra\_security\_group\_ids | (Required) List of additional security groups to add to EC2 instances | `list(string)` | `[]` | no |
-| enabled\_repos | (Optional) List of repos to be enabled with yum-config-manager. Epel repo will be enabled by default. | `list(string)` | `[]` | no |
-| inbound\_cidrs | (Optional) IP address or range of addresses to be allowed to Firewall Zone. | `list(string)` | `[]` | no |
-| ingress\_cidr\_blocks | (Optional) List of CIDR block. | `list(string)` | <pre>[<br>  "0.0.0.0/0"<br>]</pre> | no |
-| instance\_type | (Optional) Amazon EC2 instance type | `string` | `"t2.medium"` | no |
-| kms\_key\_id | (Optional) Id of an AWS KMS key use for auto unseal operation when vault is intialize | `string` | `null` | no |
-| lb\_internal | (Optional) Boolean indicating whether the load balancer is internal or external | `bool` | `true` | no |
-| lb\_ssl\_policy | (Optional) The name of the SSL Policy for the listener | `string` | `"ELBSecurityPolicy-FS-2018-06"` | no |
-| max\_capacity | (Optional) Maximum number of instances in the Autoscaling Group | `string` | `"2"` | no |
-| min\_capacity | (Optional) Minimum number of instances in the Autoscaling Group | `string` | `"1"` | no |
-| override\_json | (Optional) Override the current policy document | `string` | `""` | no |
-| point\_in\_time\_recovery | (Optional) Enabling Amazon DynamoDB point-in-time recovery (PITR) provides automatic backups of your DynamoDB table data. | `bool` | `true` | no |
-| pypi\_index\_url | (Optional) URL to the PyPi Index | `string` | `"https://pypi.org/simple"` | no |
-| scale\_down\_schedule | (Optional) Scheduled Action in cron-format (UTC) to scale down to MinCapacity; ignored if empty or ScaleUpSchedule is unset (E.g. '0 0 * * *') | `string` | `null` | no |
-| scale\_up\_schedule | (Optional) Scheduled Action in cron-format (UTC) to scale up to MaxCapacity; ignored if empty or ScaleDownSchedule is unset (E.g. '0 10 * * Mon-Fri') | `string` | `null` | no |
-| tags | (Optional) List of tags to include with resource | `map(string)` | `{}` | no |
-| template\_vars | (Optional) List extra configurations to be referenced in the pillar | `map` | `{}` | no |
-| toggle\_update | (Optional) Toggle that triggers a stack update by modifying the launch config, resulting in new instances; must be one of: A or B | `string` | `"A"` | no |
-| vault\_url | (Optional) The DNS address that vault will be accessible at. Stack name will be used as the url when value is set to empty. Example: vault.domain.net | `string` | `null` | no |
-| watchmaker\_admin\_groups | (Optional) Colon-separated list of domain groups that should have admin permissions on the EC2 instance | `string` | `""` | no |
-| watchmaker\_admin\_users | (Optional) Colon-separated list of domain users that should have admin permissions on the EC2 instance | `string` | `""` | no |
-| watchmaker\_config | (Optional) URL to a Watchmaker config file | `string` | `""` | no |
-| watchmaker\_ou\_path | (Optional) DN of the OU to place the instance when joining a domain. If blank and WatchmakerEnvironment enforces a domain join, the instance will be placed in a default container. Leave blank if not joining a domain, or if WatchmakerEnvironment is false | `string` | `""` | no |
+| <a name="input_ami_owners"></a> [ami\_owners](#input\_ami\_owners) | (Required) Account id/alias of the AMI owners | `list(string)` | n/a | yes |
+| <a name="input_domain_name"></a> [domain\_name](#input\_domain\_name) | (Required) The domain name where vault url will be registered to. Example: domain.net | `string` | n/a | yes |
+| <a name="input_ec2_subnet_ids"></a> [ec2\_subnet\_ids](#input\_ec2\_subnet\_ids) | (Required) List of subnets where EC2 instances will be launched | `list(string)` | n/a | yes |
+| <a name="input_environment"></a> [environment](#input\_environment) | (Required) Type of environment -- must be one of: dev, test, prod | `string` | n/a | yes |
+| <a name="input_key_pair_name"></a> [key\_pair\_name](#input\_key\_pair\_name) | (Required) Keypair to associate to launched instances | `string` | n/a | yes |
+| <a name="input_lb_subnet_ids"></a> [lb\_subnet\_ids](#input\_lb\_subnet\_ids) | (Required) List of subnets to associate to the Load Balancer | `list(string)` | n/a | yes |
+| <a name="input_name"></a> [name](#input\_name) | (Required) Name of the vault stack, will be use to prefix resources | `string` | n/a | yes |
+| <a name="input_route53_zone_id"></a> [route53\_zone\_id](#input\_route53\_zone\_id) | (Required) Hosted zone ID Route 53 hosted zone | `string` | n/a | yes |
+| <a name="input_vault_pillar_path"></a> [vault\_pillar\_path](#input\_vault\_pillar\_path) | (Required) Specify the path to vault pillar | `string` | n/a | yes |
+| <a name="input_vault_version"></a> [vault\_version](#input\_vault\_version) | (Required) Version of Vault to be installed on servers | `string` | n/a | yes |
+| <a name="input_ami_name_filters"></a> [ami\_name\_filters](#input\_ami\_name\_filters) | (Optional) Will be use to filter out AMI | `list(string)` | <pre>[<br>  "spel-minimal-centos-7-hvm-*.x86_64-gp2"<br>]</pre> | no |
+| <a name="input_ami_name_regex"></a> [ami\_name\_regex](#input\_ami\_name\_regex) | (Optional) Regex to help fine-grain filtering AMI | `string` | `"spel-minimal-centos-7-hvm-\d{4}\.\d{2}\.\d{1}\.x86_64-gp2"` | no |
+| <a name="input_api_port"></a> [api\_port](#input\_api\_port) | (Optional) The port to use for Vault API calls | `number` | `8200` | no |
+| <a name="input_certificate_arn"></a> [certificate\_arn](#input\_certificate\_arn) | (Optional) The ARN of the default SSL server certificate to be use for HTTPS lb listener. | `string` | `null` | no |
+| <a name="input_cfn_bootstrap_utils_url"></a> [cfn\_bootstrap\_utils\_url](#input\_cfn\_bootstrap\_utils\_url) | (Optional) URL to aws-cfn-bootstrap-latest.tar.gz | `string` | `"https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz"` | no |
+| <a name="input_cfn_endpoint_url"></a> [cfn\_endpoint\_url](#input\_cfn\_endpoint\_url) | (Optional) URL to the CloudFormation Endpoint. e.g. https://cloudformation.us-east-1.amazonaws.com | `string` | `"https://cloudformation.us-east-1.amazonaws.com"` | no |
+| <a name="input_cloudwatch_agent_url"></a> [cloudwatch\_agent\_url](#input\_cloudwatch\_agent\_url) | (Optional) S3 URL to CloudWatch Agent installer. Example: s3://amazoncloudwatch-agent/linux/amd64/latest/AmazonCloudWatchAgent.zip | `string` | `""` | no |
+| <a name="input_cluster_port"></a> [cluster\_port](#input\_cluster\_port) | (Optional) The port to use for Vault server-to-server communication. | `number` | `8201` | no |
+| <a name="input_desired_capacity"></a> [desired\_capacity](#input\_desired\_capacity) | (Optional) Desired number of instances in the Autoscaling Group | `string` | `"2"` | no |
+| <a name="input_dynamodb_max_read_capacity"></a> [dynamodb\_max\_read\_capacity](#input\_dynamodb\_max\_read\_capacity) | (Optional) The max capacity of the scalable target for DynamoDb table autoscaling. | `number` | `100` | no |
+| <a name="input_dynamodb_min_read_capacity"></a> [dynamodb\_min\_read\_capacity](#input\_dynamodb\_min\_read\_capacity) | (Optional) The min capacity of the scalable target for DynamoDb table autoscaling. | `number` | `5` | no |
+| <a name="input_dynamodb_table"></a> [dynamodb\_table](#input\_dynamodb\_table) | (Optional) Name of the Dynamodb to be used as storage backend for Vault | `string` | `null` | no |
+| <a name="input_dynamodb_target_value"></a> [dynamodb\_target\_value](#input\_dynamodb\_target\_value) | (Optional) The target value for the metric of the scaling policy configuration. | `number` | `70` | no |
+| <a name="input_ec2_extra_security_group_ids"></a> [ec2\_extra\_security\_group\_ids](#input\_ec2\_extra\_security\_group\_ids) | (Required) List of additional security groups to add to EC2 instances | `list(string)` | `[]` | no |
+| <a name="input_enabled_repos"></a> [enabled\_repos](#input\_enabled\_repos) | (Optional) List of repos to be enabled with yum-config-manager. Epel repo will be enabled by default. | `list(string)` | `[]` | no |
+| <a name="input_inbound_cidrs"></a> [inbound\_cidrs](#input\_inbound\_cidrs) | (Optional) IP address or range of addresses to be allowed to Firewall Zone. | `list(string)` | `[]` | no |
+| <a name="input_ingress_cidr_blocks"></a> [ingress\_cidr\_blocks](#input\_ingress\_cidr\_blocks) | (Optional) List of CIDR block. | `list(string)` | <pre>[<br>  "0.0.0.0/0"<br>]</pre> | no |
+| <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | (Optional) Amazon EC2 instance type | `string` | `"t2.medium"` | no |
+| <a name="input_kms_key_id"></a> [kms\_key\_id](#input\_kms\_key\_id) | (Optional) Id of an AWS KMS key use for auto unseal operation when vault is intialize | `string` | `null` | no |
+| <a name="input_lb_internal"></a> [lb\_internal](#input\_lb\_internal) | (Optional) Boolean indicating whether the load balancer is internal or external | `bool` | `true` | no |
+| <a name="input_lb_ssl_policy"></a> [lb\_ssl\_policy](#input\_lb\_ssl\_policy) | (Optional) The name of the SSL Policy for the listener | `string` | `"ELBSecurityPolicy-FS-2018-06"` | no |
+| <a name="input_max_capacity"></a> [max\_capacity](#input\_max\_capacity) | (Optional) Maximum number of instances in the Autoscaling Group | `string` | `"2"` | no |
+| <a name="input_min_capacity"></a> [min\_capacity](#input\_min\_capacity) | (Optional) Minimum number of instances in the Autoscaling Group | `string` | `"1"` | no |
+| <a name="input_override_json"></a> [override\_json](#input\_override\_json) | (Optional) Override the current policy document | `string` | `""` | no |
+| <a name="input_point_in_time_recovery"></a> [point\_in\_time\_recovery](#input\_point\_in\_time\_recovery) | (Optional) Enabling Amazon DynamoDB point-in-time recovery (PITR) provides automatic backups of your DynamoDB table data. | `bool` | `true` | no |
+| <a name="input_pypi_index_url"></a> [pypi\_index\_url](#input\_pypi\_index\_url) | (Optional) URL to the PyPi Index | `string` | `"https://pypi.org/simple"` | no |
+| <a name="input_scale_down_schedule"></a> [scale\_down\_schedule](#input\_scale\_down\_schedule) | (Optional) Scheduled Action in cron-format (UTC) to scale down to MinCapacity; ignored if empty or ScaleUpSchedule is unset (E.g. '0 0 * * *') | `string` | `null` | no |
+| <a name="input_scale_up_schedule"></a> [scale\_up\_schedule](#input\_scale\_up\_schedule) | (Optional) Scheduled Action in cron-format (UTC) to scale up to MaxCapacity; ignored if empty or ScaleDownSchedule is unset (E.g. '0 10 * * Mon-Fri') | `string` | `null` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | (Optional) List of tags to include with resource | `map(string)` | `{}` | no |
+| <a name="input_template_vars"></a> [template\_vars](#input\_template\_vars) | (Optional) List extra configurations to be referenced in the pillar | `map` | `{}` | no |
+| <a name="input_toggle_update"></a> [toggle\_update](#input\_toggle\_update) | (Optional) Toggle that triggers a stack update by modifying the launch config, resulting in new instances; must be one of: A or B | `string` | `"A"` | no |
+| <a name="input_vault_url"></a> [vault\_url](#input\_vault\_url) | (Optional) The DNS address that vault will be accessible at. Stack name will be used as the url when value is set to empty. Example: vault.domain.net | `string` | `null` | no |
+| <a name="input_watchmaker_admin_groups"></a> [watchmaker\_admin\_groups](#input\_watchmaker\_admin\_groups) | (Optional) Colon-separated list of domain groups that should have admin permissions on the EC2 instance | `string` | `""` | no |
+| <a name="input_watchmaker_admin_users"></a> [watchmaker\_admin\_users](#input\_watchmaker\_admin\_users) | (Optional) Colon-separated list of domain users that should have admin permissions on the EC2 instance | `string` | `""` | no |
+| <a name="input_watchmaker_config"></a> [watchmaker\_config](#input\_watchmaker\_config) | (Optional) URL to a Watchmaker config file | `string` | `""` | no |
+| <a name="input_watchmaker_ou_path"></a> [watchmaker\_ou\_path](#input\_watchmaker\_ou\_path) | (Optional) DN of the OU to place the instance when joining a domain. If blank and WatchmakerEnvironment enforces a domain join, the instance will be placed in a default container. Leave blank if not joining a domain, or if WatchmakerEnvironment is false | `string` | `""` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| vault\_url | URL to access Vault UI |
+| <a name="output_vault_url"></a> [vault\_url](#output\_vault\_url) | URL to access Vault UI |
 
 <!-- END TFDOCS -->
