@@ -187,6 +187,16 @@ sync_policies:
     - policies: {{ vault.policies | yaml }}
 ```
 
+## Testing
+
+At the moment, testing is manual:
+
+```
+# Replace "xxx" with an actual AWS profile, then execute the integration tests.
+export AWS_PROFILE=xxx 
+make terraform/pytest PYTEST_ARGS="-v --nomock"
+```
+
 <!-- BEGIN TFDOCS -->
 ## Requirements
 
