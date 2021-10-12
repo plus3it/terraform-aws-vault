@@ -5,6 +5,11 @@ updates:
   schedule:
     interval: daily
   open-pull-requests-limit: 10
+- package-ecosystem: gomod
+  directory: "/tests"
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 10
 - package-ecosystem: terraform
   directory: "/tests/vault-py2"
   schedule:
@@ -12,16 +17,6 @@ updates:
   open-pull-requests-limit: 10
 - package-ecosystem: terraform
   directory: "/tests/vault-py3"
-  schedule:
-    interval: daily
-  open-pull-requests-limit: 10
-- package-ecosystem: gomod
-  directory: "/tests"
-  schedule:
-    interval: daily
-  open-pull-requests-limit: 10
-- package-ecosystem: pip
-  directory: "/"
   schedule:
     interval: daily
   open-pull-requests-limit: 10
