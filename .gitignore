@@ -25,3 +25,7 @@ tests/__pycache__/
 .vagrant/
 .pillar/
 pillar
+
+# Go files
+go.mod
+go.sum
