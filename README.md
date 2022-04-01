@@ -233,7 +233,7 @@ sync_policies:
 | <a name="input_vault_pillar_path"></a> [vault\_pillar\_path](#input\_vault\_pillar\_path) | (Required) Specify the path to vault pillar | `string` | n/a | yes |
 | <a name="input_vault_version"></a> [vault\_version](#input\_vault\_version) | (Required) Version of Vault to be installed on servers | `string` | n/a | yes |
 | <a name="input_ami_name_filters"></a> [ami\_name\_filters](#input\_ami\_name\_filters) | (Optional) Will be use to filter out AMI | `list(string)` | <pre>[<br>  "spel-minimal-centos-7-hvm-*.x86_64-gp2"<br>]</pre> | no |
-| <a name="input_ami_name_regex"></a> [ami\_name\_regex](#input\_ami\_name\_regex) | (Optional) Regex to help fine-grain filtering AMI | `string` | `"spel-minimal-centos-7-hvm-\d{4}\.\d{2}\.\d{1}\.x86_64-gp2"` | no |
+| <a name="input_ami_name_regex"></a> [ami\_name\_regex](#input\_ami\_name\_regex) | (Optional) Regex to help fine-grain filtering AMI | `string` | `"spel-minimal-centos-7-hvm-\\d{4}\\.\\d{2}\\.\\d{1}\\.x86_64-gp2"` | no |
 | <a name="input_api_port"></a> [api\_port](#input\_api\_port) | (Optional) The port to use for Vault API calls | `number` | `8200` | no |
 | <a name="input_certificate_arn"></a> [certificate\_arn](#input\_certificate\_arn) | (Optional) The ARN of the default SSL server certificate to be use for HTTPS lb listener. | `string` | `null` | no |
 | <a name="input_cfn_bootstrap_utils_url"></a> [cfn\_bootstrap\_utils\_url](#input\_cfn\_bootstrap\_utils\_url) | (Optional) URL to aws-cfn-bootstrap-latest.tar.gz | `string` | `"https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz"` | no |
