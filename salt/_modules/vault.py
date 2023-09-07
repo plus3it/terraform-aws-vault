@@ -309,7 +309,6 @@ class VaultAuthManager:
 
         auth_methods = []
         for auth_method in configs:
-
             config = OrderedDict(sorted(auth_method.get("config", {}).items()))
             auth_config = OrderedDict(
                 sorted(auth_method.get("auth_config", {}).items())
