@@ -208,7 +208,6 @@ def policies_synced(name, policies=[]):
     policiesManager = __salt__["vault.get_policies_manager"]()
 
     try:
-
         existing_policies = client.sys.list_policies()["data"]
         remote_policies = []
 
