@@ -232,7 +232,7 @@ sync_policies:
 | <a name="input_route53_zone_id"></a> [route53\_zone\_id](#input\_route53\_zone\_id) | (Required) Hosted zone ID Route 53 hosted zone | `string` | n/a | yes |
 | <a name="input_vault_pillar_path"></a> [vault\_pillar\_path](#input\_vault\_pillar\_path) | (Required) Specify the path to vault pillar | `string` | n/a | yes |
 | <a name="input_vault_version"></a> [vault\_version](#input\_vault\_version) | (Required) Version of Vault to be installed on servers | `string` | n/a | yes |
-| <a name="input_ami_name_filters"></a> [ami\_name\_filters](#input\_ami\_name\_filters) | (Optional) Will be use to filter out AMI | `list(string)` | <pre>[<br>  "spel-minimal-centos-7-hvm-*.x86_64-gp2"<br>]</pre> | no |
+| <a name="input_ami_name_filters"></a> [ami\_name\_filters](#input\_ami\_name\_filters) | (Optional) Will be use to filter out AMI | `list(string)` | <pre>[<br/>  "spel-minimal-centos-7-hvm-*.x86_64-gp2"<br/>]</pre> | no |
 | <a name="input_ami_name_regex"></a> [ami\_name\_regex](#input\_ami\_name\_regex) | (Optional) Regex to help fine-grain filtering AMI | `string` | `"spel-minimal-centos-7-hvm-\\d{4}\\.\\d{2}\\.\\d{1}\\.x86_64-gp2"` | no |
 | <a name="input_api_port"></a> [api\_port](#input\_api\_port) | (Optional) The port to use for Vault API calls | `number` | `8200` | no |
 | <a name="input_certificate_arn"></a> [certificate\_arn](#input\_certificate\_arn) | (Optional) The ARN of the default SSL server certificate to be use for HTTPS lb listener. | `string` | `null` | no |
@@ -248,7 +248,7 @@ sync_policies:
 | <a name="input_ec2_extra_security_group_ids"></a> [ec2\_extra\_security\_group\_ids](#input\_ec2\_extra\_security\_group\_ids) | (Required) List of additional security groups to add to EC2 instances | `list(string)` | `[]` | no |
 | <a name="input_enabled_repos"></a> [enabled\_repos](#input\_enabled\_repos) | (Optional) List of repos to be enabled with yum-config-manager. Epel repo will be enabled by default. | `list(string)` | `[]` | no |
 | <a name="input_inbound_cidrs"></a> [inbound\_cidrs](#input\_inbound\_cidrs) | (Optional) IP address or range of addresses to be allowed to Firewall Zone. | `list(string)` | `[]` | no |
-| <a name="input_ingress_cidr_blocks"></a> [ingress\_cidr\_blocks](#input\_ingress\_cidr\_blocks) | (Optional) List of CIDR block. | `list(string)` | <pre>[<br>  "0.0.0.0/0"<br>]</pre> | no |
+| <a name="input_ingress_cidr_blocks"></a> [ingress\_cidr\_blocks](#input\_ingress\_cidr\_blocks) | (Optional) List of CIDR block. | `list(string)` | <pre>[<br/>  "0.0.0.0/0"<br/>]</pre> | no |
 | <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | (Optional) Amazon EC2 instance type | `string` | `"t2.medium"` | no |
 | <a name="input_kms_key_id"></a> [kms\_key\_id](#input\_kms\_key\_id) | (Optional) Id of an AWS KMS key use for auto unseal operation when vault is intialize | `string` | `null` | no |
 | <a name="input_lb_internal"></a> [lb\_internal](#input\_lb\_internal) | (Optional) Boolean indicating whether the load balancer is internal or external | `bool` | `true` | no |
