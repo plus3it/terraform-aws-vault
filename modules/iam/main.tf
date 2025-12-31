@@ -19,7 +19,7 @@ data "template_file" "instance_policy" {
   vars = merge(var.policy_vars,
     {
       partition  = data.aws_partition.current.partition
-      region     = data.aws_region.current.name
+      region     = data.aws_region.current.region
       account_id = data.aws_caller_identity.current.account_id
     }
   )

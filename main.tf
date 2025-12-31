@@ -96,7 +96,7 @@ resource "local_file" "pillar" {
     kms_key_id     = local.kms_key_id
     logs_dir       = local.logs_dir
     logs_path      = local.logs_path
-    region         = data.aws_region.current.name
+    region         = data.aws_region.current.region
     ssm_path       = local.ssm_root_path
     vault_version  = var.vault_version
   }, local.template_vars))
@@ -116,7 +116,7 @@ resource "local_file" "pillar_data" {
     kms_key_id     = local.kms_key_id
     logs_dir       = local.logs_dir
     logs_path      = local.logs_path
-    region         = data.aws_region.current.name
+    region         = data.aws_region.current.region
     ssm_path       = local.ssm_root_path
     vault_version  = var.vault_version
   }, local.template_vars))
