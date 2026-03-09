@@ -4,6 +4,7 @@
 This module provides methods for interacting with Hashicorp Vault via the HVAC
 library.
 """
+
 from __future__ import absolute_import
 from builtins import super
 
